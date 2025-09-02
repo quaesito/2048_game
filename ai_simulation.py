@@ -9,7 +9,6 @@ Usage:
 Examples:
     python ai_simulation.py          # Run 50 games (default)
     python ai_simulation.py 100     # Run 100 games
-    python ai_simulation.py 25      # Run 25 games
     python ai_simulation.py --help  # Show help
 """
 
@@ -266,10 +265,14 @@ class GameRunner:
         # Sort results by game number
         results.sort(key=lambda x: x['game_num'])
         
+        # Create batch-specific stats for logging
+        batch_stats = GameStats()
+        
         # Process each result
         for result in results:
             game_num = result['game_num']
-            self.stats.update_with_result(result)
+            self.stats.update_with_result(result)  # Update cumulative stats
+            batch_stats.update_with_result(result)  # Update batch-specific stats
             
             # Display result
             avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
@@ -283,12 +286,12 @@ class GameRunner:
         print(f"⏱️  Batch execution time: {execution_time:.2f} seconds")
         print(f"🎯 Batch speed: {len(results) / execution_time:.1f} games/second")
         
-        # Log batch results to CSV
-        if self.stats.stats['games_played'] > 0:
+        # Log batch-specific results to CSV
+        if batch_stats.stats['games_played'] > 0:
             session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_batch{batch_num}"
             command_args = f"batch={batch_num}, games_in_batch={len(results)}"
-            CSVLogger.log_to_csv(self.stats.stats, session_id, command_args)
-            print(f"📝 Batch {batch_num} results logged to CSV")
+            CSVLogger.log_to_csv(batch_stats.stats, session_id, command_args)
+            print(f"📝 Batch {batch_num} results logged to CSV (batch-specific stats)")
     
     @staticmethod
     def _run_single_game_wrapper(args_tuple) -> Dict:
@@ -346,7 +349,6 @@ class CSVLogger:
             round(avg_moves, 1),                          # avg_moves_per_game
             round(avg_ai_latency, 3),                     # avg_ai_latency
             round(avg_game_time, 2),                      # avg_game_time
-            round(stats.get('execution_time', 0), 1),     # execution_time
             stats['ai_suggestions_count'],                # total_ai_suggestions
             games_2,                                      # games_2
             games_8,                                      # games_8
@@ -368,7 +370,7 @@ class CSVLogger:
                     'timestamp', 'session_id', 'total_games', 'games_won', 'games_lost',
                     'win_rate_percent', 'max_score', 'max_tile', 'total_moves',
                     'avg_moves_per_game', 'avg_ai_latency', 'avg_game_time',
-                    'execution_time', 'total_ai_suggestions',
+                    'total_ai_suggestions',
                     'games_2', 'games_8', 'games_32', 'games_128', 'games_512',
                     'games_1024', 'games_2048', 'command_args'
                 ]
@@ -398,7 +400,7 @@ class PlotGenerator:
         
         # Define tile categories up to 2048 only
         tile_categories = ['2-4', '8-16', '32-64', '128-256', '512', '1024', '2048']
-        tile_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F8C471']
+        tile_colors = ['black'] * len(tile_categories)  # All bars black
         
         # Get counts for each category
         max_tile_dist = stats['max_tile_distribution']
@@ -462,25 +464,38 @@ class PlotGenerator:
                 print("❌ CSV file is empty")
                 return
             
-            print(f"📊 Found {len(df)} simulation sessions in CSV")
-            print(f"📈 Total games across all sessions: {df['total_games'].sum()}")
+            # Filter to only batch-specific rows (exclude final summary rows)
+            batch_rows = df[df['session_id'].str.contains('_batch', na=False)]
             
-            # Create aggregated stats dict from all CSV data
+            if batch_rows.empty:
+                print("❌ No batch-specific data found in CSV")
+                return
+            
+            print(f"📊 Found {len(batch_rows)} batch sessions in CSV")
+            print(f"📈 Total games across all batches: {batch_rows['total_games'].sum()}")
+            
+            # Create aggregated stats dict from batch-specific data
             stats = {
-                'games_played': df['total_games'].sum(),
-                'games_won': df['games_won'].sum(),
-                'max_score': df['max_score'].max(),
+                'games_played': batch_rows['total_games'].sum(),
+                'games_won': batch_rows['games_won'].sum(),
+                'max_score': batch_rows['max_score'].max(),
                 'all_max_tiles': [],  # Not used in CSV-based plotting, but required by function
                 'max_tile_distribution': {
-                    '2-4': df['games_2'].sum() if 'games_2' in df.columns else 0,
-                    '8-16': df['games_8'].sum() if 'games_8' in df.columns else 0,
-                    '32-64': df['games_32'].sum() if 'games_32' in df.columns else 0,
-                    '128-256': df['games_128'].sum() if 'games_128' in df.columns else 0,
-                    '512': df['games_512'].sum() if 'games_512' in df.columns else 0,
-                    '1024': df['games_1024'].sum() if 'games_1024' in df.columns else 0,
-                    '2048': df['games_2048'].sum() if 'games_2048' in df.columns else 0,
+                    '2-4': batch_rows['games_2'].sum() if 'games_2' in batch_rows.columns else 0,
+                    '8-16': batch_rows['games_8'].sum() if 'games_8' in batch_rows.columns else 0,
+                    '32-64': batch_rows['games_32'].sum() if 'games_32' in batch_rows.columns else 0,
+                    '128-256': batch_rows['games_128'].sum() if 'games_128' in batch_rows.columns else 0,
+                    '512': batch_rows['games_512'].sum() if 'games_512' in batch_rows.columns else 0,
+                    '1024': batch_rows['games_1024'].sum() if 'games_1024' in batch_rows.columns else 0,
+                    '2048': batch_rows['games_2048'].sum() if 'games_2048' in batch_rows.columns else 0,
                 }
             }
+            
+            print(f"📊 Aggregated statistics:")
+            print(f"  Total Games: {stats['games_played']}")
+            print(f"  Games Won: {stats['games_won']}")
+            print(f"  Win Rate: {(stats['games_won'] / stats['games_played'] * 100):.1f}%")
+            print(f"  Max Score: {stats['max_score']}")
             
             # Use the existing plot function
             return PlotGenerator.plot_max_tile_distribution(stats, save_plot=True, show_plot=True)
