@@ -56,13 +56,10 @@
 
         <div class="flex justify-between items-center mb-4">
             <button id="new-game-btn" class="px-4 py-2 bg-orange-500 text-white font-bold rounded-lg shadow-md hover:bg-orange-600 transition-colors">New Game</button>
-            <button id="ai-suggestion-btn" class="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Get Hint</button>
-        </div>
-        
-        <div class="flex justify-center items-center mb-4">
-            <button id="ai-autopilot-btn" class="px-6 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors text-lg">
+            <button id="ai-autopilot-btn" class="px-4 py-2 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors">
                 <span id="autopilot-text">🤖 AI Autopilot</span>
             </button>
+            <button id="ai-suggestion-btn" class="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Get AI Hint</button>
         </div>
         
         <div id="ai-suggestion-text" class="text-center text-blue-600 font-semibold mb-2 h-6"></div>
@@ -227,7 +224,7 @@
             
             // Update UI
             autopilotText.textContent = '⏹️ Stop Autopilot';
-            aiAutopilotBtn.className = 'px-6 py-3 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors text-lg';
+            aiAutopilotBtn.className = 'px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors';
             autopilotStatus.classList.remove('hidden');
             autopilotStatusText.textContent = '🤖 AI Autopilot Active';
             aiSuggestionText.textContent = '';
@@ -281,7 +278,7 @@
             
             // Update UI
             autopilotText.textContent = '🤖 AI Autopilot';
-            aiAutopilotBtn.className = 'px-6 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors text-lg';
+            aiAutopilotBtn.className = 'px-4 py-2 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors';
             
             if (autopilotMoves > 0) {
                 const elapsed = Math.floor((Date.now() - autopilotStartTime) / 1000);
