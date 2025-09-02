@@ -1,0 +1,5 @@
+timestamp,session_id,total_games,games_won,games_lost,win_rate_percent,max_score,max_tile,total_moves,avg_moves_per_game,avg_ai_latency,avg_game_time,execution_time,total_ai_suggestions,games_2,games_8,games_32,games_128,games_512,games_1024,games_2048,games_4096_plus,command_args
+2025-09-02 05:37:17,20250902_053600,10,0,10,0.0,7188,512,3879,387.9,0.049,18.87,76.8,3879,0,0,0,6,4,0,0,0,"games=10, max_moves=5000"
+2025-09-02 05:44:44,20250902_054437,10,0,10,0.0,11524,1024,3815,381.5,0.008,2.88,7.0,3815,0,0,0,7,2,1,0,0,"games=10, max_moves=5000"
+2025-09-02 05:46:49,20250902_054529,100,0,100,0.0,14964,1024,42527,425.3,0.007,3.14,79.3,42527,0,0,0,39,51,10,0,0,"games=100, max_moves=5000"
+2025-09-02 10:08:08,20250902_100739,3,2,1,66.7,20748,2048,2562,854.0,0.028,23.51,28.7,2562,0,0,0,0,1,0,2,0,"games=3, max_moves=5000"

@@ -539,9 +539,9 @@ def main():
     # Parse command-line arguments
     args = parse_arguments()
     
-    print("🎮 2048 AI Simulation - Advanced Backend Integration")
-    print("Testing the advanced AI with sophisticated heuristics and lookahead...")
-    print("Using game_logic.py backend with expectimax algorithm and multi-heuristic evaluation")
+    print("🎮 2048 AI Simulation - New AI Integration")
+    print("Testing the new expectiminimax AI with snake heuristic...")
+    print("Using game_logic.py backend with expectiminimax algorithm and snake pattern evaluation")
     print(f"📊 Configuration: {args.games} games, max {args.max_moves} moves per game")
     
     if args.max_workers:
@@ -610,18 +610,15 @@ def main():
         print(f"  Games reaching 512+: {games_512_plus} ({games_512_plus/total_games*100:.1f}%)")
     
     # Show AI algorithm details
-    print(f"\n🤖 EXPERT AI ALGORITHM DETAILS:")
-    print("• Expectimax with Expert Depth (4-6 move lookahead)")
-    print("• Move Ordering: Quick evaluation → Deep search on top moves")
-    print("• Expert Multi-heuristic evaluation system:")
-    print("  - EMPTIES DOMINATE (Weight: 10.0) - Quadratic bonus")
-    print("  - Monotonicity scoring (Weight: 2.0)") 
-    print("  - Smoothness optimization (Weight: 1.0)")
-    print("  - Corner strategy with guardrails (Weight: 3.0)")
-    print("  - Potential merges (Weight: 2.0)")
-    print("  - Clustering penalty (Weight: 0.5)")
-    print("• Keep max in corner policy with strong bonuses/penalties")
-    print("• Target: 95-99% win rate for 2048 achievement")
+    print(f"\n🤖 NEW AI ALGORITHM DETAILS:")
+    print("• Expectiminimax with Snake Heuristic (depth 2)")
+    print("• Snake Pattern Evaluation: Perfect snake pattern weights")
+    print("• Strategic Features:")
+    print("  - Snake heuristic with exponential weights")
+    print("  - Expectiminimax for stochastic tile placement")
+    print("  - Depth 2 lookahead for balanced performance")
+    print("  - Optimized for snake-like tile arrangement")
+    print("• Target: High win rate with snake pattern strategy")
     print("• Performance tracking: AI latency, game timing, comprehensive stats")
 
 if __name__ == "__main__":
