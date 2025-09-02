@@ -15,15 +15,25 @@ Examples:
 
 import game_logic as game
 import time
-import sys
 import argparse
-from typing import List
+from typing import List, Dict
 from multiprocessing import Pool, cpu_count
+import matplotlib.pyplot as plt
+import pandas as pd
+import csv
+import os
+from datetime import datetime
 
-class AISimulation:
-    """AI simulation class for testing 2048 game AI performance."""
+
+class GameStats:
+    """Handles game statistics tracking and management."""
+    
     def __init__(self):
-        self.game_stats = {
+        self.reset()
+    
+    def reset(self):
+        """Reset all statistics to initial values."""
+        self.stats = {
             'games_played': 0,
             'games_won': 0,
             'games_lost': 0,
@@ -38,21 +48,15 @@ class AISimulation:
             'max_ai_latency': 0.0,
             'min_game_time': float('inf'),
             'max_game_time': 0.0,
-            'all_max_tiles': [],  # Store all max tiles for distribution analysis
+            'all_max_tiles': [],
             'max_tile_distribution': {
-                '2-4': 0,
-                '8-16': 0,
-                '32-64': 0,
-                '128-256': 0,
-                '512': 0,
-                '1024': 0,
-                '2048': 0,
-                '4096+': 0
+                '2-4': 0, '8-16': 0, '32-64': 0, '128-256': 0,
+                '512': 0, '1024': 0, '2048': 0, '4096+': 0
             }
         }
     
-    def categorize_max_tile(self, max_tile):
-        """Categorize max tile value into distribution buckets for statistics."""
+    def categorize_max_tile(self, max_tile: int) -> str:
+        """Categorize max tile value into distribution buckets."""
         if max_tile <= 4:
             return '2-4'
         elif max_tile <= 16:
@@ -70,9 +74,57 @@ class AISimulation:
         else:
             return '4096+'
     
-    def run_single_game(self, max_moves: int = 10000, verbose: bool = False) -> dict:
+    def update_with_result(self, result: Dict):
+        """Update statistics with a single game result."""
+        self.stats['games_played'] += 1
+        self.stats['total_moves'] += result['moves']
+        
+        # Update max tile distribution
+        max_tile = result['max_tile']
+        self.stats['all_max_tiles'].append(max_tile)
+        category = self.categorize_max_tile(max_tile)
+        self.stats['max_tile_distribution'][category] += 1
+        
+        # Update timing statistics
+        if 'ai_latencies' in result and result['ai_latencies']:
+            for latency in result['ai_latencies']:
+                self.stats['total_ai_latency'] += latency
+                self.stats['ai_suggestions_count'] += 1
+                self.stats['min_ai_latency'] = min(self.stats['min_ai_latency'], latency)
+                self.stats['max_ai_latency'] = max(self.stats['max_ai_latency'], latency)
+        
+        if 'game_time' in result:
+            game_time = result['game_time']
+            self.stats['total_game_time'] += game_time
+            self.stats['min_game_time'] = min(self.stats['min_game_time'], game_time)
+            self.stats['max_game_time'] = max(self.stats['max_game_time'], game_time)
+        
+        # Update win/loss counts
+        if result['status'] == 'win':
+            self.stats['games_won'] += 1
+        elif result['status'] == 'lose':
+            self.stats['games_lost'] += 1
+        
+        # Update max values
+        if result['score'] > self.stats['max_score']:
+            self.stats['max_score'] = result['score']
+        if result['max_tile'] > self.stats['max_tile']:
+            self.stats['max_tile'] = result['max_tile']
+        
+        # Update win rate
+        if self.stats['games_played'] > 0:
+            self.stats['win_rate'] = (self.stats['games_won'] / self.stats['games_played']) * 100
+
+
+class GameRunner:
+    """Handles running individual games and batch processing."""
+    
+    def __init__(self, stats: GameStats):
+        self.stats = stats
+    
+    def run_single_game(self, max_moves: int = 10000) -> Dict:
         """Run a single AI-controlled game and return detailed statistics."""
-        # Initialize game using the backend
+        # Initialize game
         board = game.new_game()
         game.add_random_tile(board)
         game.add_random_tile(board)
@@ -87,34 +139,14 @@ class AISimulation:
         ai_latencies = []
         ai_suggestions_count = 0
         
-        if verbose:
-            print("Starting new game...")
-            self.print_board(board)
-        
         while moves_made < max_moves:
-            # Check game state using backend
+            # Check game state
             game_status = game.get_game_state(board)
             
-            if game_status == 'win':
-                if verbose:
-                    print(f"🎉 AI WON! Achieved 2048 tile!")
+            if game_status in ['win', 'lose']:
                 game_end_time = time.time()
                 return {
-                    'status': 'win',
-                    'moves': moves_made,
-                    'score': score,
-                    'max_tile': max_tile_achieved,
-                    'final_board': [row[:] for row in board],
-                    'game_time': game_end_time - game_start_time,
-                    'ai_latencies': ai_latencies,
-                    'ai_suggestions_count': ai_suggestions_count
-                }
-            elif game_status == 'lose':
-                if verbose:
-                    print(f"💀 AI LOST! No more moves available.")
-                game_end_time = time.time()
-                return {
-                    'status': 'lose',
+                    'status': game_status,
                     'moves': moves_made,
                     'score': score,
                     'max_tile': max_tile_achieved,
@@ -124,7 +156,7 @@ class AISimulation:
                     'ai_suggestions_count': ai_suggestions_count
                 }
             
-            # Get AI suggestion using the backend with timing
+            # Get AI suggestion with timing
             ai_start_time = time.time()
             ai_move = game.get_ai_suggestion(board)
             ai_end_time = time.time()
@@ -134,8 +166,6 @@ class AISimulation:
             ai_suggestions_count += 1
             
             if ai_move is None:
-                if verbose:
-                    print("AI couldn't find a valid move!")
                 game_end_time = time.time()
                 return {
                     'status': 'lose',
@@ -148,12 +178,10 @@ class AISimulation:
                     'ai_suggestions_count': ai_suggestions_count
                 }
             
-            # Execute the move using backend functions
+            # Execute the move
             move_functions = {
-                'up': game.move_up,
-                'down': game.move_down,
-                'left': game.move_left,
-                'right': game.move_right,
+                'up': game.move_up, 'down': game.move_down,
+                'left': game.move_left, 'right': game.move_right,
             }
             
             new_board, score_gain, has_moved = move_functions[ai_move](board)
@@ -164,7 +192,7 @@ class AISimulation:
                 moves_made += 1
                 consecutive_no_progress = 0
                 
-                # CRITICAL: Add a new random tile after each successful move
+                # Add new random tile
                 game.add_random_tile(board)
                 
                 # Track max tile
@@ -172,18 +200,9 @@ class AISimulation:
                     for cell in row:
                         if cell is not None and cell > max_tile_achieved:
                             max_tile_achieved = cell
-                
-                if verbose and moves_made % 100 == 0:
-                    print(f"Move {moves_made}: {ai_move}, Score: {score}, Max Tile: {max_tile_achieved}")
             else:
                 consecutive_no_progress += 1
-                if verbose:
-                    print(f"Move {ai_move} didn't change the board! ({consecutive_no_progress} consecutive)")
-                
-                # If we haven't made progress for too long, break
                 if consecutive_no_progress > 10:
-                    if verbose:
-                        print("Too many consecutive non-progress moves, ending game.")
                     break
         
         # Game ended due to max moves or no progress
@@ -199,10 +218,10 @@ class AISimulation:
             'ai_suggestions_count': ai_suggestions_count
         }
     
-    def run_multiple_games_async(self, num_games: int = 10, max_workers: int = None, max_moves: int = 5000) -> dict:
-        """Run multiple AI games in parallel using multiprocessing for performance testing."""
+    def run_multiple_games_async(self, num_games: int, max_workers: int = None, max_moves: int = 5000) -> Dict:
+        """Run multiple AI games in parallel using multiprocessing."""
         if max_workers is None:
-            max_workers = min(cpu_count(), 5)  # Max 5 parallel games per batch
+            max_workers = min(cpu_count(), 5)
         
         print(f"🚀 Running AI simulation for {num_games} games in batches of {max_workers}...")
         print(f"⚡ Using {max_workers} CPU cores per batch")
@@ -211,21 +230,19 @@ class AISimulation:
         all_results = []
         total_execution_time = 0
         
-        # Process games in batches of max_workers
+        # Process games in batches
         for batch_start in range(0, num_games, max_workers):
             batch_end = min(batch_start + max_workers, num_games)
             batch_size = batch_end - batch_start
+            batch_number = batch_start // max_workers + 1
             
-            print(f"\n📦 Processing batch {batch_start // max_workers + 1}: Games {batch_start + 1}-{batch_end}")
+            print(f"\n📦 Processing batch {batch_number}: Games {batch_start + 1}-{batch_end}")
             
             start_time = time.time()
             
             # Run current batch in parallel
             with Pool(processes=batch_size) as pool:
-                # Create list of (game_number, max_moves) tuples for this batch
                 game_args = [(game_num, max_moves) for game_num in range(batch_start + 1, batch_end + 1)]
-                
-                # Run batch games in parallel
                 batch_results = pool.map(self._run_single_game_wrapper, game_args)
             
             end_time = time.time()
@@ -233,122 +250,252 @@ class AISimulation:
             total_execution_time += batch_execution_time
             
             # Process batch results
-            self._process_batch_results(batch_results, batch_execution_time)
+            self._process_batch_results(batch_results, batch_execution_time, batch_number)
             all_results.extend(batch_results)
-        
-        # Calculate final statistics
-        if self.game_stats['games_played'] > 0:
-            self.game_stats['win_rate'] = (self.game_stats['games_won'] / self.game_stats['games_played']) * 100
-        
-        print(f"\n⏱️  Total execution time: {total_execution_time:.2f} seconds")
-        print(f"🎯 Games per second: {len(all_results) / total_execution_time:.1f}")
         
         return {
             'results': all_results,
-            'stats': self.game_stats,
+            'stats': self.stats.stats,
             'execution_time': total_execution_time
         }
     
-    def _process_batch_results(self, results: List[dict], execution_time: float) -> None:
+    def _process_batch_results(self, results: List[Dict], execution_time: float, batch_num: int) -> None:
         """Process and display results from a batch of parallel game simulations."""
         print(f"📊 Processing {len(results)} game results from batch...")
         
-        # Sort results by game number for consistent output
+        # Sort results by game number
         results.sort(key=lambda x: x['game_num'])
         
         # Process each result
         for result in results:
             game_num = result['game_num']
+            self.stats.update_with_result(result)
             
-            # Update statistics
-            self.game_stats['games_played'] += 1
-            self.game_stats['total_moves'] += result['moves']
+            # Display result
+            avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
+            status_icon = "✅" if result['status'] == 'win' else "❌" if result['status'] == 'lose' else "⏰"
+            status_text = "WON!" if result['status'] == 'win' else "LOST!" if result['status'] == 'lose' else "TIMEOUT"
             
-            # Update max tile distribution
-            max_tile = result['max_tile']
-            self.game_stats['all_max_tiles'].append(max_tile)
-            max_tile_category = self.categorize_max_tile(max_tile)
-            self.game_stats['max_tile_distribution'][max_tile_category] += 1
-            
-            # Update timing statistics
-            if 'ai_latencies' in result and result['ai_latencies']:
-                for latency in result['ai_latencies']:
-                    self.game_stats['total_ai_latency'] += latency
-                    self.game_stats['ai_suggestions_count'] += 1
-                    self.game_stats['min_ai_latency'] = min(self.game_stats['min_ai_latency'], latency)
-                    self.game_stats['max_ai_latency'] = max(self.game_stats['max_ai_latency'], latency)
-            
-            if 'game_time' in result:
-                game_time = result['game_time']
-                self.game_stats['total_game_time'] += game_time
-                self.game_stats['min_game_time'] = min(self.game_stats['min_game_time'], game_time)
-                self.game_stats['max_game_time'] = max(self.game_stats['max_game_time'], game_time)
-            
-            if result['status'] == 'win':
-                self.game_stats['games_won'] += 1
-                avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
-                print(f"✅ Game {game_num:2d}: WON!    Score: {result['score']:6,}, Moves: {result['moves']:4d}, Max Tile: {result['max_tile']}, Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
-            elif result['status'] == 'lose':
-                self.game_stats['games_lost'] += 1
-                avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
-                print(f"❌ Game {game_num:2d}: LOST!   Score: {result['score']:6,}, Moves: {result['moves']:4d}, Max Tile: {result['max_tile']}, Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
-            else:
-                avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
-                print(f"⏰ Game {game_num:2d}: TIMEOUT Score: {result['score']:6,}, Moves: {result['moves']:4d}, Max Tile: {result['max_tile']}, Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
-            
-            if result['score'] > self.game_stats['max_score']:
-                self.game_stats['max_score'] = result['score']
-            
-            if result['max_tile'] > self.game_stats['max_tile']:
-                self.game_stats['max_tile'] = result['max_tile']
+            print(f"{status_icon} Game {game_num:2d}: {status_text:<7} Score: {result['score']:6,}, "
+                  f"Moves: {result['moves']:4d}, Max Tile: {result['max_tile']}, "
+                  f"Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
         
         print(f"⏱️  Batch execution time: {execution_time:.2f} seconds")
         print(f"🎯 Batch speed: {len(results) / execution_time:.1f} games/second")
+        
+        # Log batch results to CSV
+        if self.stats.stats['games_played'] > 0:
+            session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_batch{batch_num}"
+            command_args = f"batch={batch_num}, games_in_batch={len(results)}"
+            CSVLogger.log_to_csv(self.stats.stats, session_id, command_args)
+            print(f"📝 Batch {batch_num} results logged to CSV")
     
     @staticmethod
-    def _run_single_game_wrapper(args_tuple) -> dict:
+    def _run_single_game_wrapper(args_tuple) -> Dict:
         """Wrapper function for multiprocessing to run a single game simulation."""
         game_num, max_moves = args_tuple
-        # Create a new simulation instance for each process
-        simulation = AISimulation()
-        result = simulation.run_single_game(max_moves=max_moves, verbose=False)
+        stats = GameStats()
+        runner = GameRunner(stats)
+        result = runner.run_single_game(max_moves=max_moves)
         result['game_num'] = game_num
         return result
+
+
+class CSVLogger:
+    """Handles CSV logging functionality."""
     
-    def print_board(self, board: List[List]) -> None:
-        """Print the game board in a formatted grid layout."""
-        print("\n" + "=" * 25)
-        for row in board:
-            row_str = "|"
-            for cell in row:
-                if cell is None:
-                    row_str += "    |"
-                else:
-                    row_str += f"{cell:4d}|"
-            print(row_str)
-        print("=" * 25)
-    
-    def calculate_max_tile_percentiles(self, max_tiles):
-        """Calculate percentile statistics for max tile distribution analysis."""
-        if not max_tiles:
-            return {}
+    @staticmethod
+    def log_to_csv(stats: Dict, session_id: str, command_args: str = ""):
+        """Log simulation results to CSV format."""
+        os.makedirs("simulation_logs", exist_ok=True)
+        csv_path = "simulation_logs/simulation_results.csv"
+        file_exists = os.path.exists(csv_path)
         
-        sorted_tiles = sorted(max_tiles)
-        n = len(sorted_tiles)
+        # Calculate statistics
+        total_games = stats['games_played']
+        games_won = stats['games_won']
+        games_lost = stats['games_lost']
+        win_rate = (games_won / total_games * 100) if total_games > 0 else 0
         
-        return {
-            'min': sorted_tiles[0],
-            '25th': sorted_tiles[int(n * 0.25)],
-            '50th': sorted_tiles[int(n * 0.5)],
-            '75th': sorted_tiles[int(n * 0.75)],
-            '90th': sorted_tiles[int(n * 0.90)],
-            '95th': sorted_tiles[int(n * 0.95)],
-            '99th': sorted_tiles[int(n * 0.99)],
-            'max': sorted_tiles[-1]
-        }
+        # Count max tile distribution
+        max_tile_dist = stats['max_tile_distribution']
+        games_2 = max_tile_dist.get('2-4', 0)
+        games_8 = max_tile_dist.get('8-16', 0)
+        games_32 = max_tile_dist.get('32-64', 0)
+        games_128 = max_tile_dist.get('128-256', 0)
+        games_512 = max_tile_dist.get('512', 0)
+        games_1024 = max_tile_dist.get('1024', 0)
+        games_2048 = max_tile_dist.get('2048', 0)
+        
+        # Calculate averages
+        avg_moves = stats['total_moves'] / total_games if total_games > 0 else 0
+        avg_ai_latency = stats['total_ai_latency'] / stats['ai_suggestions_count'] if stats['ai_suggestions_count'] > 0 else 0
+        avg_game_time = stats['total_game_time'] / total_games if total_games > 0 else 0
+        
+        # Prepare row data
+        row_data = [
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # timestamp
+            session_id,                                    # session_id
+            total_games,                                   # total_games
+            games_won,                                     # games_won
+            games_lost,                                    # games_lost
+            round(win_rate, 1),                           # win_rate_percent
+            stats['max_score'],                           # max_score
+            stats['max_tile'],                            # max_tile
+            stats['total_moves'],                         # total_moves
+            round(avg_moves, 1),                          # avg_moves_per_game
+            round(avg_ai_latency, 3),                     # avg_ai_latency
+            round(avg_game_time, 2),                      # avg_game_time
+            round(stats.get('execution_time', 0), 1),     # execution_time
+            stats['ai_suggestions_count'],                # total_ai_suggestions
+            games_2,                                      # games_2
+            games_8,                                      # games_8
+            games_32,                                     # games_32
+            games_128,                                    # games_128
+            games_512,                                    # games_512
+            games_1024,                                   # games_1024
+            games_2048,                                   # games_2048
+            command_args                                  # command_args
+        ]
+        
+        # Write to CSV
+        with open(csv_path, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            
+            # Write headers if file is new
+            if not file_exists:
+                headers = [
+                    'timestamp', 'session_id', 'total_games', 'games_won', 'games_lost',
+                    'win_rate_percent', 'max_score', 'max_tile', 'total_moves',
+                    'avg_moves_per_game', 'avg_ai_latency', 'avg_game_time',
+                    'execution_time', 'total_ai_suggestions',
+                    'games_2', 'games_8', 'games_32', 'games_128', 'games_512',
+                    'games_1024', 'games_2048', 'command_args'
+                ]
+                writer.writerow(headers)
+            
+            # Write data row
+            writer.writerow(row_data)
+        
+        print(f"📝 Results logged to: {csv_path}")
+
+
+class PlotGenerator:
+    """Handles plot generation functionality."""
     
-    def print_final_statistics(self, stats: dict, execution_time: float = None) -> None:
-        """Print comprehensive simulation statistics with performance analysis."""
+    @staticmethod
+    def plot_max_tile_distribution(stats: Dict, save_plot: bool = True, show_plot: bool = True) -> None:
+        """Plot the distribution of maximum tiles achieved across all games."""
+        # Check if we have data
+        has_data = stats.get('all_max_tiles') or any(stats.get('max_tile_distribution', {}).values())
+        if not has_data:
+            print("⚠️  No max tile data available for plotting")
+            return
+        
+        # Create single bar plot
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+        fig.suptitle('2048 AI Simulation - Max Tile Distribution', fontsize=16, fontweight='bold')
+        
+        # Define tile categories up to 2048 only
+        tile_categories = ['2-4', '8-16', '32-64', '128-256', '512', '1024', '2048']
+        tile_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F8C471']
+        
+        # Get counts for each category
+        max_tile_dist = stats['max_tile_distribution']
+        counts = [max_tile_dist.get(category, 0) for category in tile_categories]
+        
+        # Create bar plot
+        bars = ax.bar(tile_categories, counts, color=tile_colors, edgecolor='black', linewidth=1, alpha=0.8)
+        
+        # Customize the plot
+        ax.set_xlabel('Maximum Tile Achieved', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Number of Games', fontsize=12, fontweight='bold')
+        ax.tick_params(axis='x', rotation=45)
+        
+        # Add value labels on top of bars
+        total_games = stats['games_played']
+        for bar, count in zip(bars, counts):
+            if count > 0:
+                # Add count label
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5, 
+                       str(count), ha='center', va='bottom', fontweight='bold')
+                
+                # Add percentage label
+                percentage = (count / total_games) * 100
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2, 
+                       f'{percentage:.1f}%', ha='center', va='center', 
+                       fontweight='bold', color='white', fontsize=10)
+        
+        # Customize grid and layout
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        plt.tight_layout()
+        
+        # Add summary statistics
+        win_rate = (stats['games_won'] / total_games * 100) if total_games > 0 else 0
+        stats_text = f'Total Games: {total_games}\nWin Rate: {win_rate:.1f}%'
+        fig.text(0.02, 0.02, stats_text, fontsize=10, 
+                 bbox=dict(boxstyle='round', facecolor='lightgray', alpha=0.8))
+        
+        # Save plot if requested
+        if save_plot:
+            filename = f"simulation_logs/max_tile_distribution_{int(time.time())}.png"
+            plt.savefig(filename, dpi=300, bbox_inches='tight')
+            print(f"📊 Plot saved to: {filename}")
+        
+        # Show plot if requested
+        if show_plot:
+            plt.show()
+    
+    @staticmethod
+    def create_plot_from_csv():
+        """Create a bar plot from all results in the CSV file."""
+        csv_path = "simulation_logs/simulation_results.csv"
+        if not os.path.exists(csv_path):
+            print(f"❌ CSV file not found: {csv_path}")
+            return
+        
+        try:
+            # Read the data
+            df = pd.read_csv(csv_path)
+            
+            if df.empty:
+                print("❌ CSV file is empty")
+                return
+            
+            print(f"📊 Found {len(df)} simulation sessions in CSV")
+            print(f"📈 Total games across all sessions: {df['total_games'].sum()}")
+            
+            # Create aggregated stats dict from all CSV data
+            stats = {
+                'games_played': df['total_games'].sum(),
+                'games_won': df['games_won'].sum(),
+                'max_score': df['max_score'].max(),
+                'all_max_tiles': [],  # Not used in CSV-based plotting, but required by function
+                'max_tile_distribution': {
+                    '2-4': df['games_2'].sum() if 'games_2' in df.columns else 0,
+                    '8-16': df['games_8'].sum() if 'games_8' in df.columns else 0,
+                    '32-64': df['games_32'].sum() if 'games_32' in df.columns else 0,
+                    '128-256': df['games_128'].sum() if 'games_128' in df.columns else 0,
+                    '512': df['games_512'].sum() if 'games_512' in df.columns else 0,
+                    '1024': df['games_1024'].sum() if 'games_1024' in df.columns else 0,
+                    '2048': df['games_2048'].sum() if 'games_2048' in df.columns else 0,
+                }
+            }
+            
+            # Use the existing plot function
+            return PlotGenerator.plot_max_tile_distribution(stats, save_plot=True, show_plot=True)
+            
+        except Exception as e:
+            print(f"❌ Error creating plot from CSV: {e}")
+            return None
+
+
+class StatisticsDisplay:
+    """Handles displaying simulation statistics."""
+    
+    @staticmethod
+    def print_final_statistics(stats: Dict, execution_time: float = None) -> None:
+        """Print comprehensive simulation statistics."""
         print("\n" + "=" * 80)
         print("🏆 COMPREHENSIVE AI SIMULATION RESULTS")
         print("=" * 80)
@@ -366,7 +513,7 @@ class AISimulation:
         # Max Tile Distribution Analysis
         print("\n📊 MAX TILE DISTRIBUTION ANALYSIS:")
         if stats['all_max_tiles']:
-            percentiles = self.calculate_max_tile_percentiles(stats['all_max_tiles'])
+            percentiles = StatisticsDisplay._calculate_max_tile_percentiles(stats['all_max_tiles'])
             print(f"  Max Tile Percentiles:")
             print(f"    Min: {percentiles['min']}")
             print(f"    25th: {percentiles['25th']}")
@@ -463,6 +610,41 @@ class AISimulation:
             print("  📈 The AI might need further tuning or more games to win.")
         
         print("=" * 80)
+    
+    @staticmethod
+    def _calculate_max_tile_percentiles(max_tiles):
+        """Calculate percentile statistics for max tile distribution analysis."""
+        if not max_tiles:
+            return {}
+        
+        sorted_tiles = sorted(max_tiles)
+        n = len(sorted_tiles)
+        
+        return {
+            'min': sorted_tiles[0],
+            '25th': sorted_tiles[int(n * 0.25)],
+            '50th': sorted_tiles[int(n * 0.5)],
+            '75th': sorted_tiles[int(n * 0.75)],
+            '90th': sorted_tiles[int(n * 0.90)],
+            '95th': sorted_tiles[int(n * 0.95)],
+            '99th': sorted_tiles[int(n * 0.99)],
+            'max': sorted_tiles[-1]
+        }
+    
+    @staticmethod
+    def print_board(board: List[List]) -> None:
+        """Print the game board in a formatted grid layout."""
+        print("\n" + "=" * 25)
+        for row in board:
+            row_str = "|"
+            for cell in row:
+                if cell is None:
+                    row_str += "    |"
+                else:
+                    row_str += f"{cell:4d}|"
+            print(row_str)
+        print("=" * 25)
+
 
 def parse_arguments():
     """Parse command-line arguments for configuring the AI simulation."""
@@ -474,6 +656,7 @@ Examples:
   python ai_simulation.py          # Run 50 games (default)
   python ai_simulation.py 100     # Run 100 games
   python ai_simulation.py 25      # Run 25 games
+  python ai_simulation.py --create-plot    # Create plot from existing CSV
   python ai_simulation.py --help  # Show this help message
         """
     )
@@ -500,6 +683,12 @@ Examples:
         help='Maximum moves per game before timeout (default: 5000)'
     )
     
+    parser.add_argument(
+        '--create-plot',
+        action='store_true',
+        help='Create bar plot from existing CSV data'
+    )
+    
     args = parser.parse_args()
     
     # Validate arguments
@@ -521,10 +710,17 @@ Examples:
     
     return args
 
+
 def main():
     """Main function to run the AI simulation with command-line configuration."""
     # Parse command-line arguments
     args = parse_arguments()
+    
+    # Handle special commands
+    if hasattr(args, 'create_plot') and args.create_plot:
+        print("📊 Creating plot from existing CSV...")
+        PlotGenerator.create_plot_from_csv()
+        return
     
     print("🎮 2048 AI Simulation - New AI Integration")
     print("Testing the new expectiminimax AI with snake heuristic...")
@@ -536,18 +732,19 @@ def main():
     else:
         print(f"🔧 Auto-detected workers: {min(cpu_count(), 5)}")
     
-    # Create simulation instance
-    simulation = AISimulation()
+    # Create simulation components
+    stats = GameStats()
+    runner = GameRunner(stats)
     
-    # Run simulation with command-line arguments
-    results = simulation.run_multiple_games_async(
+    # Run simulation
+    results = runner.run_multiple_games_async(
         num_games=args.games,
         max_workers=args.max_workers,
         max_moves=args.max_moves
     )
     
     # Print results
-    simulation.print_final_statistics(results['stats'], results['execution_time'])
+    StatisticsDisplay.print_final_statistics(results['stats'], results['execution_time'])
     
     # Show best game details
     best_game = max(results['results'], key=lambda x: x['score'])
@@ -559,7 +756,7 @@ def main():
     
     if best_game['status'] == 'win':
         print("\n🎯 WINNING BOARD:")
-        simulation.print_board(best_game['final_board'])
+        StatisticsDisplay.print_board(best_game['final_board'])
     
     # Show enhanced performance summary
     print(f"\n⚡ ENHANCED PERFORMANCE SUMMARY:")
@@ -577,25 +774,6 @@ def main():
         avg_game_time = results['stats']['total_game_time'] / results['stats']['games_played']
         print(f"Average Game Time: {avg_game_time:.2f} seconds")
     
-    # Show max tile distribution summary
-    if results['stats']['all_max_tiles']:
-        percentiles = simulation.calculate_max_tile_percentiles(results['stats']['all_max_tiles'])
-        print(f"Max Tile Distribution:")
-        print(f"  Median Max Tile: {percentiles['50th']}")
-        print(f"  75th Percentile: {percentiles['75th']}")
-        print(f"  90th Percentile: {percentiles['90th']}")
-        print(f"  95th Percentile: {percentiles['95th']}")
-        
-        # Show success rates
-        games_2048 = results['stats']['max_tile_distribution']['2048']
-        games_1024_plus = sum(results['stats']['max_tile_distribution'][k] for k in ['1024', '2048', '4096+'])
-        games_512_plus = sum(results['stats']['max_tile_distribution'][k] for k in ['512', '1024', '2048', '4096+'])
-        total_games = len(results['stats']['all_max_tiles'])
-        
-        print(f"  Games reaching 2048: {games_2048} ({games_2048/total_games*100:.1f}%)")
-        print(f"  Games reaching 1024+: {games_1024_plus} ({games_1024_plus/total_games*100:.1f}%)")
-        print(f"  Games reaching 512+: {games_512_plus} ({games_512_plus/total_games*100:.1f}%)")
-    
     # Show AI algorithm details
     print(f"\n🤖 NEW AI ALGORITHM DETAILS:")
     print("• Expectiminimax with Snake Heuristic (depth 2)")
@@ -607,6 +785,25 @@ def main():
     print("  - Optimized for snake-like tile arrangement")
     print("• Target: High win rate with snake pattern strategy")
     print("• Performance tracking: AI latency, game timing, comprehensive stats")
+    
+    # Log final results to CSV
+    session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    command_args = f"games={args.games}, max_moves={args.max_moves}"
+    CSVLogger.log_to_csv(results['stats'], session_id, command_args)
+    
+    # Generate plots
+    print(f"\n📊 GENERATING VISUALIZATION PLOTS...")
+    try:
+        PlotGenerator.plot_max_tile_distribution(results['stats'], save_plot=True, show_plot=False)
+        print("✅ Plot generated and saved successfully!")
+        print("📁 Check the 'simulation_logs/' directory for the generated plot.")
+    except ImportError:
+        print("⚠️  Matplotlib not available. Skipping plot generation.")
+        print("   Install matplotlib with: pip install matplotlib")
+    except Exception as e:
+        print(f"⚠️  Error generating plots: {e}")
+        print("   Plots will be skipped, but simulation results are still valid.")
+
 
 if __name__ == "__main__":
     main()

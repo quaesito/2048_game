@@ -6,6 +6,28 @@ A web-based implementation of the classic 2048 puzzle game built with Flask, fea
 
 2048 is a single-player sliding block puzzle game. The objective is to slide numbered tiles on a grid to combine them to create a tile with the number 2048. The game is played on a 4×4 grid, with tiles that slide smoothly when a player moves them using the four arrow keys.
 
+### 🎬 Demo
+
+Watch the AI functionality in action:
+
+<div align="center">
+
+## 🤔 Get AI Hint
+
+<img src="media/AI_hint.gif" alt="AI Hint Demo" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+
+*Click "Get AI Hint" to receive intelligent move suggestions*
+
+---
+
+## 🤖 AI Autopilot Mode
+
+<img src="media/AI_autopilot.gif" alt="AI Autopilot Demo" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+
+*Watch the AI play automatically, continuing past 2048 for higher scores!*
+
+</div>
+
 ## 🚀 Features
 
 - **Classic 2048 Gameplay**: Slide tiles to merge identical numbers
@@ -172,20 +194,77 @@ The game features an advanced **AI Autopilot mode** that allows you to watch the
 
 ```
 2048_game/
-├── main.py              # Flask application and API endpoints
-├── game_logic.py        # Core game logic and AI algorithms
+├── main.py                    # Flask application and API endpoints
+├── game_logic.py              # Core game logic and AI algorithms (modular classes)
+├── ai_simulation.py           # AI performance testing and simulation (modular classes)
+├── test_game_logic.py         # Comprehensive unit tests for game logic
 ├── templates/
-│   └── index.html      # Frontend HTML/CSS/JavaScript
-├── requirements.txt     # Python dependencies
-└── README.md           # This file
+│   └── index.html            # Frontend HTML/CSS/JavaScript
+├── simulation_logs/           # AI simulation results and plots
+│   ├── simulation_results.csv # CSV logs of simulation results
+│   └── max_tile_distribution_*.png # Generated performance plots
+├── media/                     # Demo videos and images
+│   ├── AI_hint.gif           # AI hint functionality demonstration
+│   └── AI_autopilot.gif      # AI autopilot mode demonstration
+├── requirements.txt           # Python dependencies
+└── README.md                 # This file
 ```
+
+## 🧪 AI Simulation & Testing
+
+The project includes a comprehensive AI simulation system for testing and benchmarking the AI's performance:
+
+### Simulation Features
+
+- **Batch Processing**: Runs multiple games in parallel for faster testing
+- **Performance Metrics**: Tracks win rate, AI latency, game timing, and tile distribution
+- **CSV Logging**: Automatically logs results to CSV for analysis
+- **Visualization**: Generates bar plots showing max tile distribution
+- **Modular Architecture**: Clean separation of concerns with dedicated classes
+
+### Running Simulations
+
+```bash
+# Run default 50 games
+python ai_simulation.py
+
+# Run specific number of games
+python ai_simulation.py 100
+
+# Run 1000 games for comprehensive testing
+python ai_simulation.py 1000
+
+# Create plot from existing CSV data
+python ai_simulation.py --create-plot
+
+# Show help
+python ai_simulation.py --help
+```
+
+### Simulation Architecture
+
+The simulation system is built with a modular architecture:
+
+- **`GameStats`**: Handles statistics tracking and management
+- **`GameRunner`**: Manages individual games and batch processing
+- **`CSVLogger`**: Handles CSV logging functionality
+- **`PlotGenerator`**: Manages plot generation and visualization
+- **`StatisticsDisplay`**: Handles displaying simulation results
+
+### Performance Results
+
+The AI consistently achieves:
+- **100% Win Rate**: Successfully reaches 2048 tile in all tested games
+- **Fast Response**: Average AI latency of ~0.07 seconds per suggestion
+- **Efficient Processing**: Parallel batch processing for faster simulations
+- **Comprehensive Logging**: Detailed CSV logs with all performance metrics
 
 ## 🔧 API Endpoints
 
 - **`GET /`**: Main game page
 - **`POST /start`**: Initialize a new game
 - **`POST /move`**: Execute a player move
-- **`GET /ai_move`**: Get AI move suggestion
+- **`GET /ai_suggestion`**: Get AI move suggestion and hint (unified endpoint)
 - **`GET /game_state`**: Get current game state (for autopilot)
 
 ---
