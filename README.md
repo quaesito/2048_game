@@ -11,6 +11,7 @@ A web-based implementation of the classic 2048 puzzle game built with Flask, fea
 - **Classic 2048 Gameplay**: Slide tiles to merge identical numbers
 - **Real-time Score Tracking**: Keep track of your score as you play
 - **AI Move Suggestions**: Get intelligent move recommendations to improve your strategy
+- **AI Autopilot Mode**: Watch the AI play automatically, continuing past 2048 until manually stopped
 - **Responsive Web Interface**: Clean, modern UI that works on desktop and mobile
 - **Game State Management**: Automatic win/lose detection and game status updates
 
@@ -58,6 +59,7 @@ A web-based implementation of the classic 2048 puzzle game built with Flask, fea
    - Use arrow keys or WASD to move tiles
    - Click "New Game" to start a fresh game
    - Click "AI Hint" to get move suggestions
+   - Click "🤖 AI Autopilot" to let the AI play automatically (continues past 2048!)
 
 4. **Objective:**
    - Combine identical tiles by sliding them together
@@ -131,6 +133,41 @@ The AI implements the proven snake pattern strategy:
 - **Stochastic Handling**: Proper probability weighting for random events
 - **Response Time**: Average AI latency of ~0.07 seconds per suggestion
 
+## 🤖 AI Autopilot Mode
+
+The game features an advanced **AI Autopilot mode** that allows you to watch the AI play the entire game automatically:
+
+### Autopilot Features
+
+- **Fully Automated Play**: The AI makes all moves automatically
+- **Continues Past 2048**: Unlike manual play, autopilot doesn't stop at 2048 - it keeps going for higher scores
+- **Real-time Statistics**: Shows move count and elapsed time during autopilot
+- **Manual Control**: Start/stop autopilot at any time with a single click
+- **Visual Feedback**: Button changes color and text to indicate autopilot status
+- **Smart Stopping**: Automatically stops when the game is lost or no moves are available
+
+### How to Use Autopilot
+
+1. **Start a Game**: Click "New Game" to begin
+2. **Activate Autopilot**: Click the "🤖 AI Autopilot" button
+3. **Watch the Magic**: The AI will play automatically, making moves every 100ms
+4. **Monitor Progress**: Watch the real-time statistics (moves and time)
+5. **Stop Anytime**: Click "⏹️ Stop Autopilot" to regain manual control
+
+### Autopilot Controls
+
+- **Green Button**: "🤖 AI Autopilot" - Start autopilot mode
+- **Red Button**: "⏹️ Stop Autopilot" - Stop autopilot mode
+- **Status Display**: Shows current autopilot status and statistics
+- **Disabled Controls**: Keyboard and touch controls are disabled during autopilot
+
+### Performance
+
+- **Move Speed**: ~10 moves per second (100ms delay for visibility)
+- **High Win Rate**: The AI typically achieves 2048 and continues to higher scores
+- **Efficient**: Uses the same expectiminimax algorithm as the hint system
+- **Responsive**: Can be stopped instantly at any time
+
 ## 📁 Project Structure
 
 ```
@@ -149,6 +186,7 @@ The AI implements the proven snake pattern strategy:
 - **`POST /start`**: Initialize a new game
 - **`POST /move`**: Execute a player move
 - **`GET /ai_move`**: Get AI move suggestion
+- **`GET /game_state`**: Get current game state (for autopilot)
 
 ---
 

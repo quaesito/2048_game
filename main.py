@@ -67,5 +67,11 @@ def ai_move():
     suggestion = game.get_ai_suggestion(game_state['board'])
     return jsonify({'suggestion': suggestion})
 
+@app.route('/game_state', methods=['GET'])
+def get_game_state():
+    """Gets the current game state without modifying it."""
+    global game_state
+    return jsonify(game_state)
+
 if __name__ == '__main__':
     app.run(debug=True)
