@@ -1,3 +1,4 @@
+"""Alternative 2048 game model implementation (not currently used in main application)."""
 from random import random, choice
 LEFT = (0, -1)
 RIGHT = (0, 1)
@@ -6,14 +7,17 @@ DOWN = (1, 0)
 directions = [LEFT, UP, RIGHT, DOWN]
 
 class Board:
+    """Alternative board implementation for 2048 game."""
 
     def __init__(self, boardSize = 4):
+        """Initialize board with specified size and add two starting tiles."""
         self.boardSize = boardSize
         self.board = [[0]*boardSize for i in range(boardSize)]
         self.score = 0
         self.addTile()
         self.addTile()
     def __str__(self):
+        """Return string representation of the board."""
         outStr = ''
         for i in self.board:
             outStr += '\t'.join(map(str,i))
@@ -21,10 +25,11 @@ class Board:
         return outStr
 
     def __getitem__(self, key):
+        """Allow board indexing with board[key] syntax."""
         return self.board[key]
 
-    # Return list of tuples containing indexes of open tiles
     def getOpenTiles(self):
+        """Return list of tuples containing indexes of empty tiles."""
         openTiles = []
         for i in range(self.boardSize):
             for j in range(self.boardSize):
@@ -32,11 +37,8 @@ class Board:
                     openTiles.append((i,j))
         return openTiles
 
-    # Add a random tile to the board
-    # Throws exception if board is full
-    # 90% - 2
-    # 10% - 4
     def addTile(self, pos = None, tileToAdd = 0):
+        """Add a random tile (90% chance of 2, 10% chance of 4) to the board."""
         if pos == None:
             openTiles = self.getOpenTiles()
             if len(openTiles) == 0:
@@ -51,10 +53,8 @@ class Board:
 
         self.board[pos[0]][pos[1]] = tileToAdd
 
-    # Slide all tiles towards direction, combining tiles that slide into eachother
-    # dir: tuple containing x,y modifier to move towards
-    # Returns sum of newly combined tiles
     def move(self,dir,addNextTile=True):
+        """Move all tiles in specified direction and merge equal adjacent tiles."""
         hadCollision = [[False]*self.boardSize for i in range(self.boardSize)]
         hadMovement = False
         score = 0
@@ -118,8 +118,8 @@ class Board:
             self.addTile()
         return score, hadMovement
 
-    # Returns True if no legal moves exist
     def checkLoss(self):
+        """Check if game is lost (no empty tiles and no possible merges)."""
         for y in range(self.boardSize):
             for x in range(self.boardSize):
                 if self.board[y][x] == 0:

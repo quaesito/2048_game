@@ -1,24 +1,40 @@
+"""
+2048 Game Flask Web Application
+
+This module provides a Flask web server for the 2048 puzzle game.
+It handles HTTP requests for game interactions including:
+- Game initialization and state management
+- Player move processing
+- AI move suggestions
+- Real-time game state updates
+
+The application uses a global game state to maintain the current board,
+score, and game status across HTTP requests.
+"""
+
 from flask import Flask, jsonify, render_template, request
 import game_logic as game
 import random
 
+# Initialize Flask application
 app = Flask(__name__)
 
-# Global state for the game board and score
+# Global game state - maintains current game across HTTP requests
+# This is a simple approach suitable for single-user gameplay
 game_state = {
-    'board': [],
-    'score': 0,
-    'game_status': 'play'
+    'board': [],           # 2D list representing the game board
+    'score': 0,            # Current player score
+    'game_status': 'play'  # Game state: 'play', 'win', or 'lose'
 }
 
 @app.route('/')
 def index():
-    """Renders the main game page."""
+    """Serve the main game HTML page."""
     return render_template('index.html')
 
 @app.route('/start', methods=['POST'])
 def start_game():
-    """Initializes a new game."""
+    """Initialize a new game with empty board and two random tiles."""
     global game_state
     game_state['board'] = game.new_game()
     game.add_random_tile(game_state['board'])
@@ -29,7 +45,7 @@ def start_game():
 
 @app.route('/move', methods=['POST'])
 def move():
-    """Handles a player's move."""
+    """Process a player move in the specified direction."""
     global game_state
     if game_state['game_status'] != 'play':
         return jsonify(game_state)
@@ -59,7 +75,7 @@ def move():
 
 @app.route('/ai_move', methods=['GET'])
 def ai_move():
-    """Gets an AI-suggested move."""
+    """Get AI move suggestion for the current board state."""
     global game_state
     if game_state['game_status'] != 'play':
          return jsonify({'suggestion': 'Game Over'})
@@ -69,7 +85,7 @@ def ai_move():
 
 @app.route('/game_state', methods=['GET'])
 def get_game_state():
-    """Gets the current game state without modifying it."""
+    """Return current game state without modifying it."""
     global game_state
     return jsonify(game_state)
 

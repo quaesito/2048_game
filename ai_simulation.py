@@ -21,6 +21,7 @@ from typing import List
 from multiprocessing import Pool, cpu_count
 
 class AISimulation:
+    """AI simulation class for testing 2048 game AI performance."""
     def __init__(self):
         self.game_stats = {
             'games_played': 0,
@@ -51,7 +52,7 @@ class AISimulation:
         }
     
     def categorize_max_tile(self, max_tile):
-        """Categorize a max tile into distribution buckets."""
+        """Categorize max tile value into distribution buckets for statistics."""
         if max_tile <= 4:
             return '2-4'
         elif max_tile <= 16:
@@ -70,10 +71,7 @@ class AISimulation:
             return '4096+'
     
     def run_single_game(self, max_moves: int = 10000, verbose: bool = False) -> dict:
-        """
-        Run a single game with AI making all moves using the game_logic backend.
-        Returns game statistics including timing metrics.
-        """
+        """Run a single AI-controlled game and return detailed statistics."""
         # Initialize game using the backend
         board = game.new_game()
         game.add_random_tile(board)
@@ -202,14 +200,7 @@ class AISimulation:
         }
     
     def run_multiple_games_async(self, num_games: int = 10, max_workers: int = None, max_moves: int = 5000) -> dict:
-        """
-        Run multiple games in parallel using multiprocessing with batch processing.
-        
-        Args:
-            num_games: Number of games to simulate
-            max_workers: Maximum number of parallel workers (default: auto-detect)
-            max_moves: Maximum moves per game before timeout
-        """
+        """Run multiple AI games in parallel using multiprocessing for performance testing."""
         if max_workers is None:
             max_workers = min(cpu_count(), 5)  # Max 5 parallel games per batch
         
@@ -259,9 +250,7 @@ class AISimulation:
         }
     
     def _process_batch_results(self, results: List[dict], execution_time: float) -> None:
-        """
-        Process the results from a batch of parallel games.
-        """
+        """Process and display results from a batch of parallel game simulations."""
         print(f"📊 Processing {len(results)} game results from batch...")
         
         # Sort results by game number for consistent output
@@ -318,9 +307,7 @@ class AISimulation:
     
     @staticmethod
     def _run_single_game_wrapper(args_tuple) -> dict:
-        """
-        Wrapper function for multiprocessing to run a single game.
-        """
+        """Wrapper function for multiprocessing to run a single game simulation."""
         game_num, max_moves = args_tuple
         # Create a new simulation instance for each process
         simulation = AISimulation()
@@ -329,7 +316,7 @@ class AISimulation:
         return result
     
     def print_board(self, board: List[List]) -> None:
-        """Print the game board in a nice format."""
+        """Print the game board in a formatted grid layout."""
         print("\n" + "=" * 25)
         for row in board:
             row_str = "|"
@@ -342,7 +329,7 @@ class AISimulation:
         print("=" * 25)
     
     def calculate_max_tile_percentiles(self, max_tiles):
-        """Calculate max tile percentiles for distribution analysis."""
+        """Calculate percentile statistics for max tile distribution analysis."""
         if not max_tiles:
             return {}
         
@@ -361,7 +348,7 @@ class AISimulation:
         }
     
     def print_final_statistics(self, stats: dict, execution_time: float = None) -> None:
-        """Print comprehensive game statistics including timing analysis."""
+        """Print comprehensive simulation statistics with performance analysis."""
         print("\n" + "=" * 80)
         print("🏆 COMPREHENSIVE AI SIMULATION RESULTS")
         print("=" * 80)
@@ -478,7 +465,7 @@ class AISimulation:
         print("=" * 80)
 
 def parse_arguments():
-    """Parse command-line arguments for the simulation."""
+    """Parse command-line arguments for configuring the AI simulation."""
     parser = argparse.ArgumentParser(
         description="2048 AI Simulation - Test AI performance with configurable number of games",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -535,7 +522,7 @@ Examples:
     return args
 
 def main():
-    """Main simulation function."""
+    """Main function to run the AI simulation with command-line configuration."""
     # Parse command-line arguments
     args = parse_arguments()
     

@@ -2,18 +2,12 @@ import random
 import copy
 
 def new_game(rows=4, cols=4):
-    """
-    Starts a new game by creating a board of a given size.
-    By default, it creates a 4x4 board.
-    """
+    """Create a new empty 4x4 game board."""
     board = [[None for _ in range(cols)] for _ in range(rows)]
     return board
 
 def add_random_tile(board):
-    """
-    Adds a new tile to a random empty spot on the board.
-    The new tile will be a 2 (with 90% probability) or a 4 (with 10% probability).
-    """
+    """Add a random tile (2 or 4) to an empty cell on the board."""
     empty_cells = []
     for r in range(len(board)):
         for c in range(len(board[r])):
@@ -28,12 +22,7 @@ def add_random_tile(board):
     return board
 
 def get_game_state(board):
-    """
-    Checks the current state of the game.
-    Returns 'win' if the 2048 tile is on the board.
-    Returns 'lose' if there are no more possible moves.
-    Otherwise, returns 'play'.
-    """
+    """Check if game is won (2048 tile), lost (no moves), or still playing."""
     has_empty_cell = False
     for r in range(len(board)):
         for c in range(len(board[r])):
@@ -57,24 +46,15 @@ def get_game_state(board):
     return 'play'
 
 def transpose(board):
-    """
-    Transposes the board (rows become columns and vice-versa).
-    This is used to apply horizontal logic to vertical moves.
-    """
+    """Transpose the board matrix (swap rows and columns)."""
     return [list(row) for row in zip(*board)]
 
 def reverse(board):
-    """
-    Reverses each row of the board.
-    Used for right and down moves.
-    """
+    """Reverse each row of the board."""
     return [row[::-1] for row in board]
 
 def merge_left(board):
-    """
-    Merges the board to the left.
-    Returns the new board and the score obtained from the merges.
-    """
+    """Merge tiles to the left and return new board, score, and move status."""
     new_board = []
     score = 0
     for row in board:
@@ -103,25 +83,25 @@ def merge_left(board):
     return new_board, score, has_moved
 
 def move_left(board):
-    """Performs a left move."""
+    """Move all tiles to the left and merge equal adjacent tiles."""
     return merge_left(board)
 
 def move_right(board):
-    """Performs a right move."""
+    """Move all tiles to the right and merge equal adjacent tiles."""
     reversed_board = reverse(board)
     merged_board, score, has_moved = merge_left(reversed_board)
     final_board = reverse(merged_board)
     return final_board, score, has_moved
 
 def move_up(board):
-    """Performs an up move."""
+    """Move all tiles upward and merge equal adjacent tiles."""
     transposed_board = transpose(board)
     merged_board, score, has_moved = merge_left(transposed_board)
     final_board = transpose(merged_board)
     return final_board, score, has_moved
 
 def move_down(board):
-    """Performs a down move."""
+    """Move all tiles downward and merge equal adjacent tiles."""
     transposed_board = transpose(board)
     reversed_board = reverse(transposed_board)
     merged_board, score, has_moved = merge_left(reversed_board)
@@ -141,7 +121,7 @@ PERFECT_SNAKE = [[2,   2**2, 2**3, 2**4],
                 [2**16,2**15,2**14,2**13]]
 
 def snake_heuristic(board):
-    """Snake heuristic from new_ai.py adapted for our board structure."""
+    """Calculate board score using snake pattern heuristic for AI evaluation."""
     h = 0
     for i in range(4):
         for j in range(4):
@@ -150,7 +130,7 @@ def snake_heuristic(board):
     return h
 
 def get_open_tiles(board):
-    """Get list of open tile positions."""
+    """Get list of all empty tile positions on the board."""
     open_tiles = []
     for r in range(4):
         for c in range(4):
@@ -159,7 +139,7 @@ def get_open_tiles(board):
     return open_tiles
 
 def check_loss(board):
-    """Check if the game is lost (no valid moves)."""
+    """Check if the game is lost (no empty cells and no possible merges)."""
     # Check if there are empty cells
     if any(cell is None for row in board for cell in row):
         return False
@@ -177,7 +157,7 @@ def check_loss(board):
     return True
 
 def simulate_move_with_tile_placement(board, direction):
-    """Simulate a move and return the new board state."""
+    """Simulate a move in given direction and return new board state and move validity."""
     board_copy = [row[:] for row in board]
     
     if direction == 'up':
@@ -194,7 +174,7 @@ def simulate_move_with_tile_placement(board, direction):
     return new_board, has_moved
 
 def expectiminimax_new(board, depth, direction=None):
-    """Expectiminimax algorithm from new_ai.py adapted for our board structure."""
+    """Expectiminimax algorithm for AI decision making with stochastic tile placement."""
     if check_loss(board):
         return -INF, direction
     elif depth < 0:
@@ -225,7 +205,7 @@ def expectiminimax_new(board, depth, direction=None):
     return (a, direction)
 
 def get_next_best_move_expectiminimax(board, depth=2):
-    """Get the best move using expectiminimax algorithm from new_ai.py."""
+    """Find the best move using expectiminimax algorithm with given search depth."""
     best_score = -INF
     best_next_move = 'up'
     
@@ -244,10 +224,7 @@ def get_next_best_move_expectiminimax(board, depth=2):
     return best_next_move
 
 def get_ai_suggestion_new(board):
-    """
-    New AI suggestion using expectiminimax algorithm from new_ai.py.
-    This is the main AI function that will be used by default.
-    """
+    """Get AI move suggestion using expectiminimax algorithm with snake heuristic."""
     # Check if there are any valid moves
     valid_moves = []
     for direction in ['up', 'down', 'left', 'right']:
@@ -262,8 +239,5 @@ def get_ai_suggestion_new(board):
     return get_next_best_move_expectiminimax(board, depth=2)
 
 def get_ai_suggestion(board):
-    """
-    Main AI suggestion function - now uses the new expectiminimax algorithm.
-    This provides better strategic play with the snake heuristic.
-    """
+    """Main AI function that returns the best move suggestion for the current board."""
     return get_ai_suggestion_new(board)

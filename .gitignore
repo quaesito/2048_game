@@ -3,7 +3,6 @@ venv/
 env/
 ENV/
 2048_env/
-agentinvest-env/
 
 # Python cache files
 __pycache__/
@@ -124,6 +123,4 @@ dmypy.json
 ehthumbs.db
 Thumbs.db
 
-# Game specific
-generated_reports/
 *.log
