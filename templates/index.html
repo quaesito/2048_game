@@ -68,7 +68,7 @@
         
         <!-- AI suggestion and autopilot status displays -->
         <div id="ai-suggestion-text" class="text-center text-blue-600 font-semibold mb-2 h-6"></div>
-        <div id="autopilot-status" class="text-center text-green-600 font-semibold mb-2 h-6 hidden">
+        <div id="autopilot-status" class="text-center text-green-600 font-semibold mb-2 h-6 hidden whitespace-nowrap overflow-hidden">
             <span id="autopilot-status-text"></span>
             <span id="autopilot-stats" class="text-sm text-gray-600 ml-2"></span>
         </div>
@@ -116,6 +116,7 @@
         let autopilotInterval = null;
         let autopilotMoves = 0;
         let autopilotStartTime = null;
+        let celebrationShown = false;
 
         // Tile color mapping for different tile values
         const TILE_COLORS = {
@@ -156,6 +157,13 @@
         function updateUI(state) {
             renderBoard(state.board);
             scoreElement.textContent = state.score;
+            
+            // Check for 2048 achievement celebration (only show once)
+            if (state.game_status === 'won_2048' && state.achieved_2048 && !celebrationShown) {
+                showCelebration();
+                celebrationShown = true;
+            }
+            
             if (state.game_status === 'win') {
                 gameStatusText.textContent = 'You Win!';
                 // Don't show overlay during autopilot - let AI continue past 2048
@@ -176,6 +184,7 @@
 
         async function startGame() {
             aiSuggestionText.textContent = '';
+            celebrationShown = false; // Reset celebration flag for new game
             try {
                 const response = await fetch('/start', { method: 'POST' });
                 if (!response.ok) {
@@ -233,53 +242,69 @@
             autopilotActive = true;
             autopilotMoves = 0;
             autopilotStartTime = Date.now();
+            celebrationShown = false;
+            
+            // Start autopilot mode on server
+            try {
+                const response = await fetch('/autopilot/start', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("Error starting autopilot:", error);
+                autopilotActive = false;
+                return;
+            }
             
             // Update UI
             autopilotText.textContent = '⏹️ Stop Autopilot';
             aiAutopilotBtn.className = 'px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors';
             autopilotStatus.classList.remove('hidden');
-            autopilotStatusText.textContent = '🤖 AI Autopilot Active';
+            autopilotStatusText.textContent = '🤖 Autopilot Active';
             aiSuggestionText.textContent = '';
             
             // Start autopilot loop
             autopilotInterval = setInterval(async () => {
                 try {
-                    // Get AI suggestion
-                    const response = await fetch('/ai_move');
+                    // Execute autopilot move
+                    const response = await fetch('/autopilot/move', { method: 'POST' });
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
                     const data = await response.json();
                     
-                    if (data.suggestion && data.suggestion !== 'Game Over') {
-                        // Make the AI move
-                        await makeMove(data.suggestion);
-                        autopilotMoves++;
-                        
-                        // Update stats
-                        const elapsed = Math.floor((Date.now() - autopilotStartTime) / 1000);
-                        autopilotStats.textContent = `Moves: ${autopilotMoves} | Time: ${elapsed}s`;
-                        
-                        // Check if game is over
-                        const currentState = await getCurrentGameState();
-                        if (currentState.game_status === 'lose') {
-                            stopAutopilot();
-                            autopilotStatusText.textContent = '💀 Autopilot: Game Over';
-                        }
-                    } else {
-                        // No valid moves or game over
+                    // Update UI with new game state
+                    updateUI(data);
+                    autopilotMoves++;
+                    
+                    // Update stats
+                    const elapsed = Math.floor((Date.now() - autopilotStartTime) / 1000);
+                    autopilotStats.textContent = `${autopilotMoves} moves | ${elapsed}s`;
+                    
+                    // Check for 2048 celebration (only show once)
+                    if (data.game_status === 'won_2048' && data.achieved_2048 && !celebrationShown) {
+                        showCelebration();
+                        celebrationShown = true;
+                        autopilotStatusText.textContent = '🎉 2048 ACHIEVED! Continuing...';
+                    } else if (data.game_status === 'won_2048' && data.achieved_2048 && celebrationShown) {
+                        // Keep showing the status message even after celebration
+                        autopilotStatusText.textContent = '🎉 2048 ACHIEVED! Continuing...';
+                    }
+                    
+                    // Check if game is over
+                    if (data.game_status === 'lose') {
                         stopAutopilot();
-                        autopilotStatusText.textContent = '🏁 Autopilot: No more moves';
+                        autopilotStatusText.textContent = '💀 Game Over';
                     }
                 } catch (error) {
                     console.error("Error in autopilot:", error);
                     stopAutopilot();
-                    autopilotStatusText.textContent = '❌ Autopilot: Error occurred';
+                    autopilotStatusText.textContent = '❌ Error occurred';
                 }
             }, 100); // 100ms delay between moves for visibility
         }
 
-        function stopAutopilot() {
+        async function stopAutopilot() {
             if (!autopilotActive) return;
             
             autopilotActive = false;
@@ -288,14 +313,21 @@
                 autopilotInterval = null;
             }
             
+            // Stop autopilot mode on server
+            try {
+                await fetch('/autopilot/stop', { method: 'POST' });
+            } catch (error) {
+                console.error("Error stopping autopilot:", error);
+            }
+            
             // Update UI
             autopilotText.textContent = '🤖 AI Autopilot';
             aiAutopilotBtn.className = 'px-4 py-2 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors';
             
             if (autopilotMoves > 0) {
                 const elapsed = Math.floor((Date.now() - autopilotStartTime) / 1000);
-                autopilotStatusText.textContent = `✅ Autopilot Stopped`;
-                autopilotStats.textContent = `Final: ${autopilotMoves} moves in ${elapsed}s`;
+                autopilotStatusText.textContent = `✅ Stopped`;
+                autopilotStats.textContent = `Final: ${autopilotMoves} moves, ${elapsed}s`;
             } else {
                 autopilotStatus.classList.add('hidden');
             }
@@ -312,6 +344,102 @@
                 console.error("Error getting game state:", error);
                 return { game_status: 'play' };
             }
+        }
+
+        function showCelebration() {
+            // Create celebration overlay
+            const celebration = document.createElement('div');
+            celebration.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                animation: fadeIn 0.5s ease-in;
+            `;
+            
+            celebration.innerHTML = `
+                <div style="
+                    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+                    background-size: 400% 400%;
+                    animation: gradientShift 2s ease infinite;
+                    padding: 40px;
+                    border-radius: 20px;
+                    text-align: center;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                    animation: bounceIn 0.8s ease-out;
+                ">
+                    <h1 style="
+                        font-size: 4rem;
+                        margin: 0;
+                        color: white;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+                        animation: pulse 1s ease-in-out infinite alternate;
+                    ">🎉</h1>
+                    <h2 style="
+                        font-size: 2.5rem;
+                        margin: 20px 0;
+                        color: white;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+                    ">2048 ACHIEVED!</h2>
+                    <p style="
+                        font-size: 1.2rem;
+                        margin: 0;
+                        color: white;
+                        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                    ">AI continues to play...</p>
+                </div>
+            `;
+            
+            // Add CSS animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+                @keyframes bounceIn {
+                    0% { transform: scale(0.3); opacity: 0; }
+                    50% { transform: scale(1.05); }
+                    70% { transform: scale(0.9); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes pulse {
+                    from { transform: scale(1); }
+                    to { transform: scale(1.1); }
+                }
+                @keyframes gradientShift {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(celebration);
+            
+            // Remove celebration after 3 seconds
+            setTimeout(() => {
+                celebration.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => {
+                    if (celebration.parentNode) {
+                        celebration.parentNode.removeChild(celebration);
+                    }
+                    if (style.parentNode) {
+                        style.parentNode.removeChild(style);
+                    }
+                }, 500);
+            }, 3000);
         }
         
         // Event Listeners
