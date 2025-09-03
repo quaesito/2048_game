@@ -120,14 +120,14 @@ Perfect Snake Pattern:
 
 ### Implementation Details
 
-The advanced AI system includes these key functions:
+The advanced AI system (located in `ai_backend.py`) includes these key functions:
 
-- **`get_ai_suggestion(board)`**: Main function using expectiminimax algorithm
-- **`snake_heuristic(board)`**: Snake pattern evaluation with exponential weights
-- **`expectiminimax_new(board, depth, direction)`**: Stochastic lookahead algorithm
-- **`get_next_best_move_expectiminimax(board, depth)`**: Move selection with depth 2
-- **`simulate_move_with_tile_placement(board, direction)`**: Complete move simulation
-- **`check_loss(board)`**: Game state evaluation
+- **`get_ai_suggestion(board)`**: Main public API function using expectiminimax algorithm
+- **`AIEvaluator.snake_heuristic(board)`**: Snake pattern evaluation with exponential weights
+- **`AIEvaluator.expectiminimax(board, depth, direction)`**: Stochastic lookahead algorithm
+- **`AIEvaluator.get_best_move(board, depth)`**: Move selection with configurable depth
+- **`AIEvaluator.simulate_move(board, direction)`**: Complete move simulation
+- **`AIEvaluator.check_loss(board)`**: Game state evaluation
 
 ### How the Advanced AI Works
 
@@ -188,9 +188,10 @@ The game features an advanced **AI Autopilot mode** that allows you to watch the
 ```
 2048_game/
 ├── main.py                    # Flask application and API endpoints
-├── game_logic.py              # Core game logic and AI algorithms (modular classes)
+├── game_logic.py              # Core game logic (modular classes)
+├── ai_backend.py              # AI algorithms and decision making (modular classes)
 ├── ai_simulation.py           # AI performance testing and simulation (modular classes)
-├── test_game_logic.py         # Comprehensive unit tests for game logic
+├── unit_tests.py              # Comprehensive unit tests for game logic and AI
 ├── templates/
 │   └── index.html            # Frontend HTML/CSS/JavaScript
 ├── simulation_logs/           # AI simulation results and plots
@@ -202,6 +203,45 @@ The game features an advanced **AI Autopilot mode** that allows you to watch the
 ├── requirements.txt           # Python dependencies
 └── README.md                 # This file
 ```
+
+## 🏗️ Modular Architecture
+
+The project features a clean, modular architecture that separates concerns for better maintainability and extensibility:
+
+### Core Modules
+
+- **`game_logic.py`**: Contains all core game mechanics
+  - `GameBoard`: Board generation and state management
+  - `TilePlacer`: Random tile placement logic
+  - `MoveValidator`: Move validation and board transformations
+  - `Merger`: Tile merging logic and scoring
+  - `GameStateDetector`: End-game detection and state management
+  - `GameController`: Main orchestrator for all game operations
+
+- **`ai_backend.py`**: Dedicated AI decision-making module
+  - `AIEvaluator`: AI evaluation and decision making
+  - Expectiminimax algorithm with snake heuristic
+  - Move simulation and strategic evaluation
+  - Public API: `get_ai_suggestion(board)`
+
+- **`ai_simulation.py`**: AI performance testing and benchmarking
+  - `GameStats`: Statistics tracking and management
+  - `GameRunner`: Individual games and batch processing
+  - `CSVLogger`: CSV logging functionality
+  - `PlotGenerator`: Visualization and plotting
+
+- **`unit_tests.py`**: Comprehensive testing suite
+  - Tests for all game logic classes
+  - AI algorithm testing and validation
+  - Integration tests and performance benchmarks
+
+### Benefits of Modular Design
+
+- **Separation of Concerns**: AI logic is cleanly separated from game mechanics
+- **Easy Testing**: Each module can be tested independently
+- **Maintainability**: Changes to AI algorithms don't affect game logic
+- **Extensibility**: New AI strategies can be added without modifying core game
+- **Performance**: Optimized imports and focused functionality
 
 ## 🧪 AI Simulation & Testing
 
@@ -215,10 +255,13 @@ The project includes a comprehensive AI simulation system for testing and benchm
 - **Visualization**: Generates bar plots showing max tile distribution
 - **Modular Architecture**: Clean separation of concerns with dedicated classes
 
-### Running Simulations
+### Running Tests and Simulations
 
 ```bash
-# Run default 50 games
+# Run comprehensive unit tests (game logic + AI)
+python3 unit_tests.py
+
+# Run default 50 games simulation
 python ai_simulation.py
 
 # Run specific number of games

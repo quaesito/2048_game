@@ -14,6 +14,7 @@ score, and game status across HTTP requests.
 
 from flask import Flask, jsonify, render_template, request
 import game_logic as game
+from ai_backend import get_ai_suggestion
 import random
 
 # Initialize Flask application
@@ -98,7 +99,7 @@ def ai_move():
     if game_state['game_status'] != 'play':
          return jsonify({'suggestion': 'Game Over'})
          
-    suggestion = game.get_ai_suggestion(game_state['board'])
+    suggestion = get_ai_suggestion(game_state['board'])
     return jsonify({'suggestion': suggestion})
 
 @app.route('/game_state', methods=['GET'])
@@ -132,7 +133,7 @@ def autopilot_move():
         return jsonify(game_state)
     
     # Get AI suggestion
-    ai_suggestion = game.get_ai_suggestion(game_state['board'])
+    ai_suggestion = get_ai_suggestion(game_state['board'])
     if not ai_suggestion:
         game_state['game_status'] = 'lose'
         return jsonify(game_state)

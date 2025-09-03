@@ -11,10 +11,14 @@ from unittest.mock import patch, MagicMock
 from game_logic import (
     # Classes
     GameBoard, TilePlacer, MoveValidator, Merger, GameStateDetector, 
-    GameController, AIEvaluator,
+    GameController,
     # Public API functions
     new_game, add_random_tile, get_game_state, get_game_state_autopilot,
-    move_left, move_right, move_up, move_down, get_ai_suggestion
+    move_left, move_right, move_up, move_down
+)
+from ai_backend import (
+    # AI Classes and functions
+    AIEvaluator, get_ai_suggestion
 )
 
 
