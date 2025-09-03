@@ -15,7 +15,6 @@ score, and game status across HTTP requests.
 from flask import Flask, jsonify, render_template, request
 import game_logic as game
 from ai_backend import get_ai_suggestion
-import random
 
 # Initialize Flask application
 app = Flask(__name__)

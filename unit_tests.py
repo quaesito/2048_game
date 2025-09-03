@@ -5,22 +5,18 @@ This module contains essential unit tests focusing on core functionality
 """
 
 import unittest
-import random
-import sys
 import time
 import os
-from unittest.mock import patch, MagicMock
 from game_logic import (
     # Classes
-    GameBoard, TilePlacer, MoveValidator, Merger, GameStateDetector, 
-    GameController,
+    GameBoard, TilePlacer, MoveValidator, Merger, GameStateDetector,
     # Public API functions
-    new_game, add_random_tile, get_game_state, get_game_state_autopilot,
+    new_game, add_random_tile, get_game_state,
     move_left, move_right, move_up, move_down, get_ai_suggestion
 )
 from ai_backend import (
     # AI Classes and functions
-    AIEvaluator, get_ai_suggestion as ai_get_ai_suggestion
+    AIEvaluator
 )
 
 

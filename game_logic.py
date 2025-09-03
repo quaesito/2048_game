@@ -12,8 +12,7 @@ broken down into distinct stages with clear responsibilities:
 """
 
 import random
-import copy
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional
 
 
 class GameBoard:

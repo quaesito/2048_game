@@ -5,7 +5,6 @@ This module contains all AI-related functionality for the 2048 game,
 including the AIEvaluator class and AI decision-making algorithms.
 """
 
-import random
 from typing import List, Tuple, Optional
 from game_logic import Merger
 

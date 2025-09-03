@@ -124,11 +124,11 @@ The AI consistently achieves high scores with the following distribution:
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| Flask | 3.1.2 | Web framework |
-| pandas | 2.3.2 | Data analysis |
-| matplotlib | 3.9.4 | Visualization |
-| numpy | 2.0.2 | Numerical computing |
-| pytest | ≥7.0.0 | Testing framework |
+| Flask | 3.1.2 | Web framework for game server |
+| pandas | 2.3.2 | Data analysis for AI simulation |
+| matplotlib | 3.9.4 | Visualization for performance plots |
+
+**Note**: All other dependencies (numpy, werkzeug, jinja2, etc.) are automatically installed as transitive dependencies.
 
 ## 🎯 Game Modes
 
@@ -143,8 +143,9 @@ The AI consistently achieves high scores with the following distribution:
 - ✅ **Modular Architecture**: Clean separation of game logic and AI
 - ✅ **High Performance**: 94.9% win rate with fast response times
 - ✅ **Comprehensive Testing**: 100% test success rate
-- ✅ **Production Ready**: Robust error handling
-- ✅ **Scalable**: Parallel processing
+- ✅ **Production Ready**: Robust error handling and clean imports
+- ✅ **Scalable**: Parallel processing for AI simulations
+- ✅ **Optimized Dependencies**: Minimal requirements.txt with only direct dependencies
 
 ---
 
