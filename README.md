@@ -21,6 +21,28 @@ A modern web-based 2048 puzzle game featuring an intelligent AI that uses expect
 | **Real-time Stats** | Track score, moves, and game state |
 | **Responsive UI** | Works on desktop and mobile |
 
+---
+
+## 🎬 Live Demos
+
+<div align="center">
+
+### 🤖 AI Autopilot in Action
+*Watch the AI play automatically, achieving high scores with strategic moves*
+
+<img src="media/AI_Autopilot.gif" width="400" height="450" alt="AI Autopilot Demo">
+
+---
+
+### 💡 Get AI Hint Feature  
+*Get intelligent move suggestions from the AI to improve your gameplay*
+
+<img src="media/Get_AI_Hint.gif" width="400" height="450" alt="Get AI Hint Demo">
+
+</div>
+
+---
+
 ## 🎮 How to Play
 
 1. **Start**: `python main.py` → Open `http://localhost:5000`
