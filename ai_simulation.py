@@ -13,6 +13,7 @@ Examples:
 """
 
 import game_logic as game
+from ai_backend import get_ai_suggestion
 import time
 import argparse
 from typing import List, Dict
@@ -157,7 +158,7 @@ class GameRunner:
             
             # Get AI suggestion with timing
             ai_start_time = time.time()
-            ai_move = game.get_ai_suggestion(board)
+            ai_move = get_ai_suggestion(board)
             ai_end_time = time.time()
             
             ai_latency = ai_end_time - ai_start_time
@@ -284,7 +285,7 @@ class GameRunner:
                   f"Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
         
         print(f"⏱️  Batch execution time: {execution_time:.2f} seconds")
-        print(f"🎯 Batch speed: {len(results) / execution_time:.1f} games/second")
+        print(f"🎯 Batch speed: {len(results) / execution_time * 60:.1f} games/minute")
         
         # Log batch-specific results to CSV
         if batch_stats.stats['games_played'] > 0:
