@@ -37,7 +37,7 @@ A modern web-based 2048 puzzle game featuring an intelligent AI that uses expect
 ### 💡 Get AI Hint Feature  
 *Get intelligent move suggestions from the AI to improve your gameplay*
 
-<img src="media/Get_AI_Hint.gif" width="300" height="350" alt="Get AI Hint Demo">
+<img src="media/Get_AI_Hint.gif" width="290" height="350" alt="Get AI Hint Demo">
 
 </div>
 
