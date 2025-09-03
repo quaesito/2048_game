@@ -30,7 +30,7 @@ A modern web-based 2048 puzzle game featuring an intelligent AI that uses expect
 ### 🤖 AI Autopilot in Action
 *Watch the AI play automatically, achieving high scores with strategic moves*
 
-<img src="media/AI_Autopilot.gif" alt="AI Autopilot Demo">
+<img src="media/AI_autopilot.gif" alt="AI Autopilot Demo">
 
 ---
 
