@@ -86,8 +86,8 @@ python unit_tests.py  # Run all tests
 
 ### AI Performance Testing
 ```bash
-python ai_simulation.py          # 50 games (default)
-python ai_simulation.py 1000     # 1000 games
+python ai_simulation.py                # 50 games (default)
+python ai_simulation.py 1000           # 1000 games
 python ai_simulation.py --create-plot  # Generate plots
 ```
 
@@ -130,9 +130,10 @@ The AI consistently achieves high scores with the following distribution:
 | Package | Version | Purpose |
 |---------|---------|---------|
 | Flask | 3.1.2 | Web framework |
-| pandas | ≥1.5.0 | Data analysis |
-| matplotlib | ≥3.5.0 | Visualization |
-| numpy | ≥1.21.0 | Numerical computing |
+| pandas | 2.3.2 | Data analysis |
+| matplotlib | 3.9.4 | Visualization |
+| numpy | 2.0.2 | Numerical computing |
+| pytest | ≥7.0.0 | Testing framework |
 
 ## 🎯 Game Modes
 
