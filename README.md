@@ -36,6 +36,8 @@ Watch the AI functionality in action:
 - **AI Autopilot Mode**: Watch the AI play automatically, continuing past 2048 until manually stopped
 - **Responsive Web Interface**: Clean, modern UI that works on desktop and mobile
 - **Game State Management**: Automatic win/lose detection and game status updates
+- **Modular Architecture**: Clean separation of concerns with dedicated AI, game logic, and web components
+- **Comprehensive Testing**: Unit tests, AI simulations, and performance analysis tools
 
 ## 🛠️ Installation
 
@@ -51,8 +53,13 @@ Watch the AI functionality in action:
 
 2. **Create a virtual environment (recommended):**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv 2048_env
+   source 2048_env/bin/activate  # On Windows: 2048_env\Scripts\activate
+   ```
+   
+   Or use the existing virtual environment:
+   ```bash
+   source 2048_env/bin/activate  # On Windows: 2048_env\Scripts\activate
    ```
 
 3. **Install dependencies:**
@@ -120,14 +127,25 @@ Perfect Snake Pattern:
 
 ### Implementation Details
 
-The advanced AI system includes these key functions:
+The advanced AI system is modularized across multiple files:
 
-- **`get_ai_suggestion(board)`**: Main function using expectiminimax algorithm
+**`ai_backend.py` - AI Core:**
+- **`AIEvaluator`**: Main AI evaluation class with snake heuristic
 - **`snake_heuristic(board)`**: Snake pattern evaluation with exponential weights
-- **`expectiminimax_new(board, depth, direction)`**: Stochastic lookahead algorithm
-- **`get_next_best_move_expectiminimax(board, depth)`**: Move selection with depth 2
-- **`simulate_move_with_tile_placement(board, direction)`**: Complete move simulation
-- **`check_loss(board)`**: Game state evaluation
+- **`enhanced_evaluation(board)`**: Multi-heuristic evaluation function
+- **`expectiminimax(board, depth, is_maximizing)`**: Stochastic lookahead algorithm
+- **`get_ai_suggestion(board)`**: Main AI suggestion function
+
+**`game_logic.py` - Game Logic:**
+- **`move_up/down/left/right(board)`**: Core move functions
+- **`get_game_state(board)`**: Game state evaluation
+- **`add_random_tile(board)`**: Random tile placement
+- **`new_game()`**: Game initialization
+
+**`model.py` - Game Model:**
+- **`Board`**: Game board representation and manipulation
+- **`move(dir, addNextTile)`**: Model-based move execution
+- **`checkLoss()`**: Loss condition checking
 
 ### How the Advanced AI Works
 
@@ -154,6 +172,38 @@ The AI implements the proven snake pattern strategy:
 - **Efficient Simulation**: Fast board state copying and evaluation
 - **Stochastic Handling**: Proper probability weighting for random events
 - **Response Time**: Average AI latency of ~0.07 seconds per suggestion
+
+## 🧪 AI Simulation & Testing
+
+The project includes comprehensive AI testing capabilities through `ai_simulation.py`:
+
+### Simulation Features
+
+- **Automated Game Testing**: Run hundreds of AI games automatically
+- **Performance Metrics**: Track win rates, scores, and AI response times
+- **Parallel Processing**: Multi-core simulation for faster testing
+- **Statistical Analysis**: Detailed performance statistics and percentiles
+- **Visualization**: Generate plots showing AI performance distribution
+
+### Running Simulations
+
+```bash
+# Run 50 games (default)
+python ai_simulation.py
+
+# Run 100 games
+python ai_simulation.py 100
+
+# Run with custom settings
+python ai_simulation.py 25 --max-moves 3000
+```
+
+### Simulation Output
+
+- **Real-time Progress**: Live updates during simulation
+- **Performance Plots**: Automatic generation of distribution charts
+- **CSV Logs**: Detailed results saved to `simulation_logs/`
+- **Comprehensive Stats**: Win rates, tile distributions, timing analysis
 
 ## 🤖 AI Autopilot Mode
 
@@ -187,98 +237,21 @@ The game features an advanced **AI Autopilot mode** that allows you to watch the
 
 ```
 2048_game/
-├── main.py                    # Flask application and API endpoints
-├── game_logic.py              # Core game logic and AI algorithms (modular classes)
-├── ai_simulation.py           # AI performance testing and simulation (modular classes)
-├── test_game_logic.py         # Comprehensive unit tests for game logic
+├── main.py              # Flask web application and API endpoints
+├── game_logic.py        # Core game logic and board manipulation
+├── ai_backend.py        # AI algorithms and evaluation heuristics
+├── model.py             # Game model and board representation
+├── ai_simulation.py     # AI performance testing and simulation
+├── test_game_logic.py   # Unit tests for game logic
 ├── templates/
-│   └── index.html            # Frontend HTML/CSS/JavaScript
-├── simulation_logs/           # AI simulation results and plots
-│   ├── simulation_results.csv # CSV logs of simulation results
-│   └── max_tile_distribution_*.png # Generated performance plots
-├── media/                     # Demo videos and images
-│   ├── AI_hint.gif           # AI hint functionality demonstration
-│   └── AI_autopilot.gif      # AI autopilot mode demonstration
-├── requirements.txt           # Python dependencies
-└── README.md                 # This file
+│   └── index.html      # Frontend HTML/CSS/JavaScript
+├── media/               # Demo videos and images
+│   ├── AI_hint.gif     # AI hint functionality demonstration
+│   └── AI_autopilot.gif # AI autopilot mode demonstration
+├── simulation_logs/     # AI simulation results and plots
+├── requirements.txt     # Python dependencies
+└── README.md           # This file
 ```
-
-## 🧪 AI Simulation & Testing
-
-The project includes a comprehensive AI simulation system for testing and benchmarking the AI's performance:
-
-### Simulation Features
-
-- **Batch Processing**: Runs multiple games in parallel for faster testing
-- **Performance Metrics**: Tracks win rate, AI latency, game timing, and tile distribution
-- **CSV Logging**: Automatically logs results to CSV for analysis
-- **Visualization**: Generates bar plots showing max tile distribution
-- **Modular Architecture**: Clean separation of concerns with dedicated classes
-
-### Running Simulations
-
-```bash
-# Run default 50 games
-python ai_simulation.py
-
-# Run specific number of games
-python ai_simulation.py 100
-
-# Run 1000 games for comprehensive testing
-python ai_simulation.py 1000
-
-# Create plot from existing CSV data
-python ai_simulation.py --create-plot
-
-# Show help
-python ai_simulation.py --help
-```
-
-### Simulation Architecture
-
-The simulation system is built with a modular architecture:
-
-- **`GameStats`**: Handles statistics tracking and management
-- **`GameRunner`**: Manages individual games and batch processing
-- **`CSVLogger`**: Handles CSV logging functionality
-- **`PlotGenerator`**: Manages plot generation and visualization
-- **`StatisticsDisplay`**: Handles displaying simulation results
-
-### Performance Results
-
-#### 🎯 Current Performance (1,000 Games)
-The AI demonstrates exceptional performance on a **MacBook Pro 14" M1**:
-
-- **Win Rate**: **94.9%** (949 wins out of 1,000 games)
-- **AI Latency**: **0.07 seconds** average per move suggestion
-- **Game Duration**: **66.65 seconds** average per game
-- **Max Score Achieved**: **24,140 points**
-- **Average Moves per Game**: **953.4 moves**
-
-#### 📊 Max Tile Distribution
-![AI Performance Results](simulation_logs/max_tile_distribution_1756850065.png)
-
-*Distribution of maximum tiles achieved across 1,000 games*
-
-#### 🔮 Monte Carlo Forecast (100,000 Games)
-
-Based on statistical analysis and Monte Carlo simulation of the current performance trends:
-
-**Expected Performance at 100,000 Games:**
-- **Win Rate**: **96.8% ± 0.3%** (96,800 ± 300 wins)
-- **Confidence Interval**: 95% confidence that true win rate lies between 96.5% and 97.1%
-- **Improvement**: **+1.9%** increase from current 1,000-game performance
-
-**Statistical Justification:**
-- **Law of Large Numbers**: Larger sample size reduces variance and provides more accurate estimates
-- **Current Trend Analysis**: 94.9% at 1,000 games suggests the AI's true capability is higher
-- **Stochastic Factors**: 10% chance of 4-tile spawns creates unavoidable losses (~3-4% theoretical minimum loss rate)
-- **AI Optimization**: The expectiminimax algorithm with snake heuristic is highly sophisticated
-
-**Performance Characteristics:**
-- **Fast Response**: Maintains ~0.07s latency per suggestion
-- **Efficient Processing**: Parallel batch processing scales well
-- **Comprehensive Logging**: Detailed CSV logs with all performance metrics
 
 ## 🔧 API Endpoints
 
@@ -287,6 +260,28 @@ Based on statistical analysis and Monte Carlo simulation of the current performa
 - **`POST /move`**: Execute a player move
 - **`GET /ai_suggestion`**: Get AI move suggestion and hint (unified endpoint)
 - **`GET /game_state`**: Get current game state (for autopilot)
+- **`POST /toggle_autopilot`**: Start/stop AI autopilot mode
+
+## 🧪 Testing
+
+The project includes comprehensive testing capabilities:
+
+### Unit Tests
+```bash
+# Run game logic tests
+python test_game_logic.py
+```
+
+### AI Performance Testing
+```bash
+# Run AI simulation
+python ai_simulation.py 50
+```
+
+### Manual Testing
+- Start the Flask server: `python main.py`
+- Open browser to `http://localhost:5000`
+- Test all game features and AI functionality
 
 ---
 

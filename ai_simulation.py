@@ -275,7 +275,7 @@ class GameRunner:
             self.stats.update_with_result(result)  # Update cumulative stats
             batch_stats.update_with_result(result)  # Update batch-specific stats
             
-            # Display result
+            # Display result in CSV-compatible format
             avg_ai_latency = sum(result.get('ai_latencies', [0])) / max(len(result.get('ai_latencies', [1])), 1)
             status_icon = "✅" if result['status'] == 'win' else "❌" if result['status'] == 'lose' else "⏰"
             status_text = "WON!" if result['status'] == 'win' else "LOST!" if result['status'] == 'lose' else "TIMEOUT"
@@ -285,7 +285,8 @@ class GameRunner:
                   f"Time: {result.get('game_time', 0):.2f}s, Avg AI: {avg_ai_latency:.3f}s")
         
         print(f"⏱️  Batch execution time: {execution_time:.2f} seconds")
-        print(f"🎯 Batch speed: {len(results) / execution_time * 60:.1f} games/minute")
+        print(f"🎯 Batch speed: {len(results) / execution_time:.1f} games/second")
+    
         
         # Log batch-specific results to CSV
         if batch_stats.stats['games_played'] > 0:
@@ -303,7 +304,7 @@ class GameRunner:
         result = runner.run_single_game(max_moves=max_moves)
         result['game_num'] = game_num
         return result
-
+    
 
 class CSVLogger:
     """Handles CSV logging functionality."""
@@ -511,10 +512,13 @@ class StatisticsDisplay:
     
     @staticmethod
     def print_final_statistics(stats: Dict, execution_time: float = None) -> None:
-        """Print comprehensive simulation statistics."""
+        """Print comprehensive simulation statistics in CSV-compatible format."""
         print("\n" + "=" * 80)
-        print("🏆 COMPREHENSIVE AI SIMULATION RESULTS")
+        print("🏆 COMPREHENSIVE AI SIMULATION RESULTS (CSV Format)")
         print("=" * 80)
+        
+        # First show CSV-compatible summary
+        StatisticsDisplay._print_csv_compatible_summary(stats, execution_time)
         
         # Basic Game Statistics
         print("📊 GAME PERFORMANCE:")
@@ -626,6 +630,72 @@ class StatisticsDisplay:
             print("  📈 The AI might need further tuning or more games to win.")
         
         print("=" * 80)
+    
+    @staticmethod
+    def _print_csv_compatible_summary(stats: Dict, execution_time: float = None) -> None:
+        """Print final summary in CSV-compatible format."""
+        print("📋 FINAL SIMULATION SUMMARY (CSV Format):")
+        print("=" * 60)
+        
+        # Calculate values matching CSV structure
+        total_games = stats['games_played']
+        games_won = stats['games_won']
+        games_lost = stats['games_lost']
+        win_rate = stats['win_rate']
+        max_score = stats['max_score']
+        max_tile = stats['max_tile']
+        total_moves = stats['total_moves']
+        avg_moves = total_moves / total_games if total_games > 0 else 0
+        avg_ai_latency = stats['total_ai_latency'] / stats['ai_suggestions_count'] if stats['ai_suggestions_count'] > 0 else 0
+        avg_game_time = stats['total_game_time'] / total_games if total_games > 0 else 0
+        total_ai_suggestions = stats['ai_suggestions_count']
+        
+        # Max tile distribution
+        dist = stats['max_tile_distribution']
+        games_2 = dist.get('2-4', 0)
+        games_8 = dist.get('8-16', 0)
+        games_32 = dist.get('32-64', 0)
+        games_128 = dist.get('128-256', 0)
+        games_512 = dist.get('512', 0)
+        games_1024 = dist.get('1024', 0)
+        games_2048 = dist.get('2048', 0)
+        games_4096 = dist.get('4096+', 0)
+        
+        # Print summary table
+        print(f"{'Metric':<25} {'Value':<15} {'Details'}")
+        print("-" * 60)
+        print(f"{'Timestamp':<25} {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        print(f"{'Total Games':<25} {total_games}")
+        print(f"{'Games Won':<25} {games_won} ({win_rate:.1f}%)")
+        print(f"{'Games Lost':<25} {games_lost}")
+        print(f"{'Max Score':<25} {max_score:,}")
+        print(f"{'Max Tile':<25} {max_tile}")
+        print(f"{'Total Moves':<25} {total_moves}")
+        print(f"{'Avg Moves/Game':<25} {avg_moves:.1f}")
+        print(f"{'Avg AI Latency':<25} {avg_ai_latency:.3f}s")
+        print(f"{'Avg Game Time':<25} {avg_game_time:.2f}s")
+        print(f"{'Total AI Suggestions':<25} {total_ai_suggestions}")
+        
+        if execution_time:
+            games_per_second = total_games / execution_time
+            print(f"{'Execution Time':<25} {execution_time:.2f}s")
+            print(f"{'Games/Second':<25} {games_per_second:.1f}")
+        
+        print("\nMax Tile Distribution:")
+        print("-" * 40)
+        tile_categories = [
+            ('2-4', games_2), ('8-16', games_8), ('32-64', games_32),
+            ('128-256', games_128), ('512', games_512), ('1024', games_1024),
+            ('2048', games_2048), ('4096+', games_4096)
+        ]
+        
+        for category, count in tile_categories:
+            if count > 0:
+                percentage = (count / total_games) * 100 if total_games > 0 else 0
+                print(f"  {category:<10}: {count:>3} games ({percentage:5.1f}%)")
+        
+        print("=" * 60)
+        print()
     
     @staticmethod
     def _calculate_max_tile_percentiles(max_tiles):

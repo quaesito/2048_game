@@ -11,11 +11,12 @@ from unittest.mock import patch, MagicMock
 from game_logic import (
     # Classes
     GameBoard, TilePlacer, MoveValidator, Merger, GameStateDetector, 
-    GameController, AIEvaluator,
+    GameController,
     # Public API functions
     new_game, add_random_tile, get_game_state, get_game_state_autopilot,
-    move_left, move_right, move_up, move_down, get_ai_suggestion
+    move_left, move_right, move_up, move_down
 )
+from ai_backend import get_ai_suggestion, AIEvaluator
 
 
 class TestGameBoard(unittest.TestCase):
@@ -223,6 +224,9 @@ class TestTilePlacer(unittest.TestCase):
             # Count tiles before placement
             tiles_before = sum(1 for row in board for cell in row if cell is not None)
             
+            # Make a copy of the board to compare later
+            original_board = [row[:] for row in board]
+            
             # Add random tile
             result = TilePlacer.add_random_tile(board)
             
@@ -240,7 +244,7 @@ class TestTilePlacer(unittest.TestCase):
                 new_tiles = []
                 for r in range(4):
                     for c in range(4):
-                        if board[r][c] is None and result[r][c] is not None:
+                        if original_board[r][c] is None and result[r][c] is not None:
                             new_tiles.append(result[r][c])
                 
                 self.assertEqual(len(new_tiles), 1)
@@ -440,18 +444,16 @@ class TestMerger(unittest.TestCase):
     def test_random_merge_score_calculation(self):
         """Test that merge scores are calculated correctly."""
         for _ in range(30):
-            # Create board with known mergeable pairs
+            # Create board with a single known mergeable pair to avoid conflicts
             board = [[None] * 4 for _ in range(4)]
-            expected_score = 0
             
-            # Add mergeable pairs with known scores
-            for _ in range(random.randint(1, 3)):
-                r = random.randint(0, 3)
-                c = random.randint(0, 2)
-                value = random.choice([2, 4, 8, 16])
-                board[r][c] = value
-                board[r][c+1] = value
-                expected_score += value * 2  # Merged value
+            # Add one mergeable pair in a random row
+            r = random.randint(0, 3)
+            c = random.randint(0, 2)
+            value = random.choice([2, 4, 8, 16])
+            board[r][c] = value
+            board[r][c+1] = value
+            expected_score = value * 2  # Merged value
             
             # Test left merge
             new_board, actual_score, has_moved = Merger.merge_left(board)
@@ -1104,21 +1106,48 @@ if __name__ == '__main__':
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(test_suite)
     
-    # Print summary
-    print(f"\n{'='*50}")
-    print(f"TEST SUMMARY")
-    print(f"{'='*50}")
-    print(f"Tests run: {result.testsRun}")
-    print(f"Failures: {len(result.failures)}")
-    print(f"Errors: {len(result.errors)}")
-    print(f"Success rate: {((result.testsRun - len(result.failures) - len(result.errors)) / result.testsRun * 100):.1f}%")
+    # Print summary with emojis
+    print(f"\n{'='*60}")
+    print(f"🧪 TEST SUMMARY")
+    print(f"{'='*60}")
+    print(f"📊 Tests run: {result.testsRun}")
+    print(f"❌ Failures: {len(result.failures)}")
+    print(f"🚨 Errors: {len(result.errors)}")
+    
+    success_rate = ((result.testsRun - len(result.failures) - len(result.errors)) / result.testsRun * 100)
+    if success_rate == 100:
+        print(f"✅ Success rate: {success_rate:.1f}% 🎉")
+    elif success_rate >= 90:
+        print(f"🟢 Success rate: {success_rate:.1f}% 👍")
+    elif success_rate >= 80:
+        print(f"🟡 Success rate: {success_rate:.1f}% ⚠️")
+    else:
+        print(f"🔴 Success rate: {success_rate:.1f}% ❌")
     
     if result.failures:
-        print(f"\nFAILURES:")
-        for test, traceback in result.failures:
-            print(f"- {test}: {traceback}")
+        print(f"\n❌ FAILURES ({len(result.failures)}):")
+        for i, (test, traceback) in enumerate(result.failures, 1):
+            print(f"  {i}. 🔴 {test}")
+            # Extract just the assertion error message
+            error_lines = traceback.split('\n')
+            for line in error_lines:
+                if 'AssertionError:' in line:
+                    print(f"     💬 {line.strip()}")
+                    break
     
     if result.errors:
-        print(f"\nERRORS:")
-        for test, traceback in result.errors:
-            print(f"- {test}: {traceback}")
+        print(f"\n🚨 ERRORS ({len(result.errors)}):")
+        for i, (test, traceback) in enumerate(result.errors, 1):
+            print(f"  {i}. 🚨 {test}")
+            # Extract the main error message
+            error_lines = traceback.split('\n')
+            for line in error_lines:
+                if 'Error:' in line or 'Exception:' in line:
+                    print(f"     💬 {line.strip()}")
+                    break
+    
+    if not result.failures and not result.errors:
+        print(f"\n🎉 ALL TESTS PASSED! 🎉")
+        print(f"✨ The game logic is working perfectly! ✨")
+    
+    print(f"\n{'='*60}")
