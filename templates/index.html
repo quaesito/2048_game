@@ -265,13 +265,6 @@
             
             // Start autopilot loop
             autopilotInterval = setInterval(async () => {
-                // Check if autopilot is still active before making request
-                if (!autopilotActive) {
-                    clearInterval(autopilotInterval);
-                    autopilotInterval = null;
-                    return;
-                }
-                
                 try {
                     // Execute autopilot move
                     const response = await fetch('/autopilot/move', { method: 'POST' });
@@ -305,16 +298,8 @@
                     }
                 } catch (error) {
                     console.error("Error in autopilot:", error);
-                    // Check if this is just because autopilot was manually stopped
-                    if (autopilotActive) {
-                        stopAutopilot();
-                        // Check if it's a 400 error (autopilot not active) vs other errors
-                        if (error.message && error.message.includes('400')) {
-                            autopilotStatusText.textContent = '✅ Stopped';
-                        } else {
-                            autopilotStatusText.textContent = '❌ Error occurred';
-                        }
-                    }
+                    stopAutopilot();
+                    autopilotStatusText.textContent = '❌ Error occurred';
                 }
             }, 100); // 100ms delay between moves for visibility
         }
@@ -322,7 +307,6 @@
         async function stopAutopilot() {
             if (!autopilotActive) return;
             
-            // Set flag to false immediately to stop the loop
             autopilotActive = false;
             if (autopilotInterval) {
                 clearInterval(autopilotInterval);
@@ -331,15 +315,9 @@
             
             // Stop autopilot mode on server
             try {
-                const response = await fetch('/autopilot/stop', { method: 'POST' });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log("Autopilot stopped successfully:", data.status);
+                await fetch('/autopilot/stop', { method: 'POST' });
             } catch (error) {
                 console.error("Error stopping autopilot:", error);
-                // Still update UI even if server request fails
             }
             
             // Update UI

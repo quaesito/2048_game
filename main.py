@@ -99,7 +99,7 @@ def ai_move():
     if game_state['game_status'] != 'play':
          return jsonify({'suggestion': 'Game Over'})
          
-    suggestion = get_ai_suggestion(game_state['board'])
+    suggestion = game.get_ai_suggestion(game_state['board'])
     return jsonify({'suggestion': suggestion})
 
 @app.route('/game_state', methods=['GET'])

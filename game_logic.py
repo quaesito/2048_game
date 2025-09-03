@@ -305,9 +305,9 @@ def move_up(board: List[List[Optional[int]]]) -> Tuple[List[List[Optional[int]]]
 def move_down(board: List[List[Optional[int]]]) -> Tuple[List[List[Optional[int]]], int, bool]:
     """Move all tiles downward and merge equal adjacent tiles."""
     return _game_controller.move(board, 'down')
-
 def get_ai_suggestion(board: List[List[Optional[int]]]) -> Optional[str]:
     """Get AI move suggestion using the AI backend."""
     from ai_backend import get_ai_suggestion as ai_suggestion
     return ai_suggestion(board)
+
 

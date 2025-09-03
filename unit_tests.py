@@ -2,7 +2,6 @@
 Simplified Unit Tests for 2048 Game Logic
 
 This module contains essential unit tests focusing on core functionality
-without excessive random testing or edge cases.
 """
 
 import unittest
@@ -302,7 +301,7 @@ class TestIntegration(unittest.TestCase):
 if __name__ == '__main__':
     # Print welcome message
     print("🎮" + "="*58 + "🎮")
-    print("🧪 2048 GAME SIMPLIFIED UNIT TEST SUITE")
+    print("🧪 2048 GAME UNIT TEST SUITE")
     print("🎮" + "="*58 + "🎮")
     print("🚀 Testing essential components:")
     print("   🎯 Core Game Logic")
