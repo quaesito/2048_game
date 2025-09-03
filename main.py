@@ -33,15 +33,18 @@ game_state = {
 @app.route('/')
 def index():
     """Serve the main game HTML page."""
+    # Return the HTML template for the game interface
     return render_template('index.html')
 
 @app.route('/start', methods=['POST'])
 def start_game():
     """Initialize a new game with empty board and two random tiles."""
     global game_state
+    # Create new empty board and add two initial tiles
     game_state['board'] = game.new_game()
     game.add_random_tile(game_state['board'])
     game.add_random_tile(game_state['board'])
+    # Reset all game state variables
     game_state['score'] = 0
     game_state['game_status'] = 'play'
     game_state['autopilot_mode'] = False
@@ -52,13 +55,16 @@ def start_game():
 def move():
     """Process a player move in the specified direction."""
     global game_state
+    # Only allow moves if game is still playable
     if game_state['game_status'] not in ['play', 'won_2048']:
         return jsonify(game_state)
 
+    # Extract direction from JSON request
     direction = request.json.get('direction')
     if not direction:
         return jsonify({'error': 'Direction not provided'}), 400
 
+    # Map direction strings to game functions
     move_functions = {
         'up': game.move_up,
         'down': game.move_down,
@@ -66,10 +72,12 @@ def move():
         'right': game.move_right,
     }
 
+    # Execute the move if direction is valid
     if direction in move_functions:
         move_func = move_functions[direction]
         new_board, score_gain, has_moved = move_func(game_state['board'])
         
+        # Only update game state if move was valid
         if has_moved:
             game_state['board'] = new_board
             game_state['score'] += score_gain
@@ -96,9 +104,11 @@ def move():
 def ai_move():
     """Get AI move suggestion for the current board state."""
     global game_state
+    # Only provide suggestions if game is still playable
     if game_state['game_status'] != 'play':
          return jsonify({'suggestion': 'Game Over'})
          
+    # Get AI suggestion for current board state
     suggestion = game.get_ai_suggestion(game_state['board'])
     return jsonify({'suggestion': suggestion})
 
@@ -106,12 +116,14 @@ def ai_move():
 def get_game_state():
     """Return current game state without modifying it."""
     global game_state
+    # Return current game state as JSON
     return jsonify(game_state)
 
 @app.route('/autopilot/start', methods=['POST'])
 def start_autopilot():
     """Start autopilot mode."""
     global game_state
+    # Enable autopilot mode
     game_state['autopilot_mode'] = True
     return jsonify({'status': 'autopilot_started', 'game_state': game_state})
 
@@ -119,6 +131,7 @@ def start_autopilot():
 def stop_autopilot():
     """Stop autopilot mode."""
     global game_state
+    # Disable autopilot mode
     game_state['autopilot_mode'] = False
     return jsonify({'status': 'autopilot_stopped', 'game_state': game_state})
 
@@ -126,19 +139,22 @@ def stop_autopilot():
 def autopilot_move():
     """Execute an AI move in autopilot mode."""
     global game_state
+    # Check if autopilot is active
     if not game_state['autopilot_mode']:
         return jsonify({'error': 'Autopilot not active'}), 400
     
+    # Only allow moves if game is still playable
     if game_state['game_status'] not in ['play', 'won_2048']:
         return jsonify(game_state)
     
-    # Get AI suggestion
+    # Get AI suggestion for current board
     ai_suggestion = get_ai_suggestion(game_state['board'])
     if not ai_suggestion:
+        # No valid moves - game over
         game_state['game_status'] = 'lose'
         return jsonify(game_state)
     
-    # Execute the AI move
+    # Map AI suggestion to game move function
     move_functions = {
         'up': game.move_up,
         'down': game.move_down,
@@ -146,6 +162,7 @@ def autopilot_move():
         'right': game.move_right,
     }
     
+    # Execute the AI-suggested move
     if ai_suggestion in move_functions:
         move_func = move_functions[ai_suggestion]
         new_board, score_gain, has_moved = move_func(game_state['board'])
@@ -164,10 +181,11 @@ def autopilot_move():
                             game_state['game_status'] = 'won_2048'
                             return jsonify(game_state)
             
-            # Use autopilot game state function
+            # Use autopilot game state function (allows continuing past 2048)
             game_state['game_status'] = game.get_game_state_autopilot(game_state['board'])
     
     return jsonify(game_state)
 
 if __name__ == '__main__':
+    # Start Flask development server with debug mode enabled
     app.run(debug=True)

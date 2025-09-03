@@ -29,21 +29,26 @@ class ProgressTestRunner(unittest.TextTestRunner):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Initialize progress tracking variables
         self.total_tests = 0
         self.current_test = 0
         self.start_time = None
     
     def run(self, test):
         """Run tests with progress bar."""
+        # Initialize test tracking
         self.total_tests = test.countTestCases()
         self.current_test = 0
         self.start_time = time.time()
         
+        # Display progress header
         print(f"🧪 Running {self.total_tests} tests...")
         print("Progress: [", end="", flush=True)
         
+        # Run the actual tests
         result = super().run(test)
         
+        # Display completion message
         print("] 100%")
         elapsed = time.time() - self.start_time
         print(f"⏱️  Completed in {elapsed:.1f}s")
@@ -53,18 +58,22 @@ class ProgressTestRunner(unittest.TextTestRunner):
     def _makeResult(self):
         """Create a custom result object that tracks progress."""
         result = super()._makeResult()
+        # Store original methods to wrap them
         original_startTest = result.startTest
         original_stopTest = result.stopTest
         
         def startTest(test):
+            # Update progress bar as each test starts
             self.current_test += 1
             progress = int((self.current_test / self.total_tests) * 50)
             print("█" * (progress - int(((self.current_test - 1) / self.total_tests) * 50)), end="", flush=True)
             return original_startTest(test)
         
         def stopTest(test):
+            # Pass through to original stop method
             return original_stopTest(test)
         
+        # Replace methods with wrapped versions
         result.startTest = startTest
         result.stopTest = stopTest
         
@@ -75,6 +84,7 @@ class TestGameBoard(unittest.TestCase):
     """🎮 Essential GameBoard tests."""
     
     def setUp(self):
+        # Create fresh GameBoard instance for each test
         self.board = GameBoard()
     
     def test_init_default_size(self):
@@ -84,11 +94,13 @@ class TestGameBoard(unittest.TestCase):
     
     def test_new_game(self):
         """Test new game creation."""
+        # Create new game and verify all cells are empty
         new_board = self.board.new_game()
         self.assertTrue(all(cell is None for row in new_board for cell in row))
     
     def test_get_set_board(self):
         """Test board get/set operations."""
+        # Test setting and getting board state
         test_state = [[2, 4, None, None], [None, 8, 16, None], [None, None, None, None], [None, None, None, None]]
         self.board.set_board(test_state)
         retrieved_state = self.board.get_board()
@@ -96,8 +108,10 @@ class TestGameBoard(unittest.TestCase):
     
     def test_empty_cells(self):
         """Test empty cell detection."""
+        # Verify empty board has empty cells
         self.assertTrue(self.board.has_empty_cells())
         empty_cells = self.board.get_empty_cells()
+        # Empty 4x4 board should have 16 empty cells
         self.assertEqual(len(empty_cells), 16)
 
 
@@ -106,15 +120,19 @@ class TestTilePlacer(unittest.TestCase):
     
     def test_add_random_tile_empty_board(self):
         """Test adding tile to empty board."""
+        # Test adding tile to completely empty board
         empty_board = [[None] * 4 for _ in range(4)]
         result = TilePlacer.add_random_tile(empty_board)
         tile_count = sum(1 for row in result for cell in row if cell is not None)
+        # Should have exactly one tile after adding
         self.assertEqual(tile_count, 1)
     
     def test_add_random_tile_full_board(self):
         """Test adding tile to full board."""
+        # Test adding tile to full board (should remain unchanged)
         full_board = [[2] * 4 for _ in range(4)]
         result = TilePlacer.add_random_tile(full_board)
+        # Board should remain unchanged when no empty cells
         self.assertEqual(result, full_board)
 
 
@@ -123,6 +141,7 @@ class TestMoveValidator(unittest.TestCase):
     
     def test_transpose(self):
         """Test board transposition."""
+        # Test matrix transposition (rows become columns)
         board = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
         transposed = MoveValidator.transpose(board)
         expected = [[1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], [4, 8, 12, 16]]
@@ -130,6 +149,7 @@ class TestMoveValidator(unittest.TestCase):
     
     def test_reverse(self):
         """Test row reversal."""
+        # Test reversing each row of the board
         board = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
         reversed_board = MoveValidator.reverse(board)
         expected = [[4, 3, 2, 1], [8, 7, 6, 5], [12, 11, 10, 9], [16, 15, 14, 13]]
@@ -137,8 +157,10 @@ class TestMoveValidator(unittest.TestCase):
     
     def test_is_valid_move(self):
         """Test move validation."""
+        # Test valid move (can merge two 2s)
         board_with_merge = [[2, 2, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]]
         self.assertTrue(MoveValidator.is_valid_move(board_with_merge, 'left'))
+        # Test invalid direction
         self.assertFalse(MoveValidator.is_valid_move(board_with_merge, 'invalid'))
 
 
@@ -147,12 +169,13 @@ class TestMerger(unittest.TestCase):
     
     def test_merge_left_basic(self):
         """Test basic left merge."""
+        # Test merging two 2s into a 4
         board = [[2, 2, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]]
         new_board, score, has_moved = Merger.merge_left(board)
         expected = [[4, None, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]]
         self.assertEqual(new_board, expected)
-        self.assertEqual(score, 4)
-        self.assertTrue(has_moved)
+        self.assertEqual(score, 4)  # Score should be 4 (the merged tile value)
+        self.assertTrue(has_moved)  # Board should have changed
     
     def test_merge_right(self):
         """Test right merge."""
@@ -279,13 +302,15 @@ class TestIntegration(unittest.TestCase):
     
     def test_ai_integration(self):
         """Test AI integration with game flow."""
+        # Test AI suggestion on a board with mergeable tiles
         board = [[2, 2, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]]
         
+        # Get AI suggestion and verify it's valid
         suggestion = get_ai_suggestion(board)
         self.assertIsNotNone(suggestion)
         self.assertIn(suggestion, ['up', 'down', 'left', 'right'])
         
-        # Execute the suggested move
+        # Execute the AI-suggested move and verify it works
         if suggestion == 'left':
             new_board, score, moved = move_left(board)
         elif suggestion == 'right':
@@ -295,11 +320,12 @@ class TestIntegration(unittest.TestCase):
         elif suggestion == 'down':
             new_board, score, moved = move_down(board)
         
+        # The move should be valid and change the board
         self.assertTrue(moved)
 
 
 if __name__ == '__main__':
-    # Print welcome message
+    # Display welcome message and test overview
     print("🎮" + "="*58 + "🎮")
     print("🧪 2048 GAME UNIT TEST SUITE")
     print("🎮" + "="*58 + "🎮")
@@ -310,7 +336,7 @@ if __name__ == '__main__':
     print("🎮" + "="*58 + "🎮")
     print()
     
-    # Create test suite
+    # Create test suite with all essential test classes
     test_suite = unittest.TestSuite()
     
     # Add essential test classes only
@@ -325,11 +351,12 @@ if __name__ == '__main__':
         TestIntegration
     ]
     
+    # Load all tests from each test class
     for test_class in test_classes:
         tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
         test_suite.addTests(tests)
     
-    # Run tests with progress bar
+    # Run tests with custom progress bar runner
     runner = ProgressTestRunner(verbosity=0, stream=open(os.devnull, 'w'))
     result = runner.run(test_suite)
     
