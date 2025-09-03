@@ -120,11 +120,6 @@ The AI consistently achieves high scores with the following distribution:
 - **1024+**: ~98% of games  
 - **512+**: ~99% of games
 
-### Monte Carlo Forecast (100,000 Games)
-- **Expected Win Rate**: 96.8% ± 0.3%
-- **Confidence**: 95% confidence interval
-- **Improvement**: +1.9% from current performance
-
 ## 🛠️ Requirements
 
 | Package | Version | Purpose |
