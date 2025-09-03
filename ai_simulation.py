@@ -693,18 +693,6 @@ def main():
         avg_game_time = results['stats']['total_game_time'] / results['stats']['games_played']
         print(f"Average Game Time: {avg_game_time:.2f} seconds")
     
-    # Show AI algorithm details
-    print(f"\n🤖 AI ALGORITHM DETAILS:")
-    print("• Expectiminimax with Snake Heuristic (depth 2)")
-    print("• Snake Pattern Evaluation: Perfect snake pattern weights")
-    print("• Strategic Features:")
-    print("  - Snake heuristic with exponential weights")
-    print("  - Expectiminimax for stochastic tile placement")
-    print("  - Depth 2 lookahead for balanced performance")
-    print("  - Optimized for snake-like tile arrangement")
-    print("• Target: High win rate with snake pattern strategy")
-    print("• Performance tracking: AI latency, game timing, comprehensive stats")
-    
     # Log final results to CSV
     session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     command_args = f"games={args.games}, max_moves={args.max_moves}"
